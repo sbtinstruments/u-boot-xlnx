@@ -25,6 +25,10 @@
 *.o
 *.o.*
 *.order
+*.elf
+*.swp
+*.bif
+*.bin
 *.patch
 *.s
 *.su

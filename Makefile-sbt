@@ -1,0 +1,32 @@
+processors=$(shell grep -c ^processor /proc/cpuinfo)
+cflags="-O2 -mtune=cortex-a9 -mfpu=neon -mfloat-abi=hard"
+CROSS_COMPILE?=arm-linux-gnueabihf-
+makecmd=CROSS_COMPILE=$(CROSS_COMPILE) $(MAKE) -j $(processors) \
+	ARCH=arm CFLAGS=$(cflags)
+FSBL=/home/fpa/Documents/PetaLinux/CoreBringUp/pre-built/linux/images/zynq_fsbl.elf
+
+u-boot.elf: common/* configs/* include/* arch/arm/dts/*
+	$(makecmd) zynq_green_mango_defconfig
+	$(makecmd)
+	cp u-boot $@
+
+boot.bin: u-boot.elf $(FSBL)
+	@echo "img:{[bootloader]$(FSBL),u-boot.elf}" > boot.bif
+	/projects/zynq-mkbootimage/mkbootimage boot.bif $@
+
+.PHONY: install-remote
+install-remote: remote_host_defined boot.bin
+	ssh $(remote_host) "mount -o rw,remount /media/boot"
+	scp boot.bin $(remote_host):/media/boot/boot.bin
+	ssh $(remote_host) "mount -o ro,remount /media/boot"
+
+.PHONY: distclean
+distclean:
+	$(makecmd) distclean
+
+.PHONY: remote_host_defined
+remote_host_defined:
+ifndef remote_host
+	$(error remote_host is not set)
+endif
+

@@ -3,7 +3,7 @@ cflags="-O2 -mtune=cortex-a9 -mfpu=neon -mfloat-abi=hard"
 CROSS_COMPILE?=arm-linux-gnueabihf-
 makecmd=CROSS_COMPILE=$(CROSS_COMPILE) $(MAKE) -j $(processors) \
 	ARCH=arm CFLAGS=$(cflags)
-FSBL=/home/fpa/Documents/PetaLinux/CoreBringUp/pre-built/linux/images/zynq_fsbl.elf
+FSBL=/projects/green_mango/fsbl/Release/green_mango_fsbl.elf
 
 u-boot.elf: common/* configs/* include/* arch/arm/dts/*
 	$(makecmd) zynq_green_mango_defconfig
@@ -19,6 +19,11 @@ install-remote: remote_host_defined boot.bin
 	ssh $(remote_host) "mount -o rw,remount /media/boot"
 	scp boot.bin $(remote_host):/media/boot/boot.bin
 	ssh $(remote_host) "mount -o ro,remount /media/boot"
+
+.PHONY: program_flash
+program_flash: boot.bin $(FSBL)
+	program_flash -f boot.bin -offset 0 -flash_type qspi-x4-single \
+		-fsbl $(FSBL) -cable type xilinx_tcf url TCP:127.0.0.1:3121
 
 .PHONY: distclean
 distclean:

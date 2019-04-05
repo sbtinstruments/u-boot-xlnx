@@ -5,20 +5,25 @@ makecmd=CROSS_COMPILE=$(CROSS_COMPILE) $(MAKE) -j $(processors) \
 	ARCH=arm CFLAGS=$(cflags)
 FSBL=/projects/green_mango/fsbl/Release/green_mango_fsbl.elf
 
-u-boot.elf: common/* configs/* include/* arch/arm/dts/*
+.PHONY: all
+all: boot.bin
+
+u-boot arch/arm/dts/zynq-green-mango.dtb: common/* configs/* include/* arch/arm/dts/*.dts
 	$(makecmd) zynq_green_mango_defconfig
 	$(makecmd)
-	cp u-boot $@
+
+u-boot.elf: u-boot
+	cp $< $@
 
 boot.bin: u-boot.elf $(FSBL)
 	@echo "img:{[bootloader]$(FSBL),u-boot.elf}" > boot.bif
 	/projects/zynq-mkbootimage/mkbootimage boot.bif $@
 
-.PHONY: install-remote
-install-remote: remote_host_defined boot.bin
-	ssh $(remote_host) "mount -o rw,remount /media/boot"
-	scp boot.bin $(remote_host):/media/boot/boot.bin
-	ssh $(remote_host) "mount -o ro,remount /media/boot"
+.PHONY: dtb-install-remote
+dtb-install-remote: arch/arm/dts/zynq-green-mango.dtb remote_host_defined
+	ssh $(remote_host) "mount -o rw,remount \$$(readlink /media/system)"
+	scp $< $(remote_host):/boot/devicetree.dtb
+	ssh $(remote_host) "mount -o ro,remount \$$(readlink /media/system)"
 
 .PHONY: program_flash
 program_flash: boot.bin $(FSBL)

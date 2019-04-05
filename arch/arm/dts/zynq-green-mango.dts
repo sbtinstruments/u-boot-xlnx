@@ -43,6 +43,19 @@
 	ps-clk-frequency = <33333333>;
 };
 
+&i2c0 {
+	pmic0: da9063@58 {
+		compatible = "dlg,da9063";
+		reg = <0x58>;
+		interrupt-parent = <&gpio0>;
+		interrupts = <0 8>;
+		interrupt-controller;
+		rtc {
+			compatible = "dlg,da9063-rtc";
+		};
+	};
+};
+
 &qspi {
 	u-boot,dm-pre-reloc;
 	status = "okay";

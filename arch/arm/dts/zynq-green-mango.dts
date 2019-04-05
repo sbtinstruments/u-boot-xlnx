@@ -50,6 +50,9 @@
 		interrupt-parent = <&gpio0>;
 		interrupts = <0 8>;
 		interrupt-controller;
+		onkey {
+			compatible = "dlg,da9063-onkey";
+		};
 		rtc {
 			compatible = "dlg,da9063-rtc";
 		};

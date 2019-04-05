@@ -10,6 +10,8 @@
 #ifndef __CONFIG_ZYNQ_GREEN_MANGO_H
 #define __CONFIG_ZYNQ_GREEN_MANGO_H
 
+#define CONFIG_ZYNQ_I2C0
+
 #include <configs/zynq-common.h>
 
 /* Override default environment */

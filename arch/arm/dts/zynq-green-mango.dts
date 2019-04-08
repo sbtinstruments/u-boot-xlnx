@@ -64,6 +64,10 @@
 		interrupt-parent = <&gpio0>;
 		interrupts = <51 1>;
 	};
+	temp0: tmp102@48 {
+		compatible = "ti,tmp102";
+		reg = <0x48>;
+	};
 };
 
 &qspi {

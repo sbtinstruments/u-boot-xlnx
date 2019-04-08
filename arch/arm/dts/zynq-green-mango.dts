@@ -57,6 +57,13 @@
 			compatible = "dlg,da9063-rtc";
 		};
 	};
+	accel0: lis3dh@18 {
+		compatible = "st,lis3dh-accel";
+		reg = <0x18>;
+		st,drdy-int-pin = <1>;
+		interrupt-parent = <&gpio0>;
+		interrupts = <51 1>;
+	};
 };
 
 &qspi {

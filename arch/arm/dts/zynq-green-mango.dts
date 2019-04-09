@@ -56,6 +56,9 @@
 		rtc {
 			compatible = "dlg,da9063-rtc";
 		};
+		wdt {
+			compatible = "dlg,da9063-watchdog";
+		};
 	};
 	accel0: lis3dh@18 {
 		compatible = "st,lis3dh-accel";

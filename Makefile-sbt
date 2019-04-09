@@ -4,6 +4,7 @@ CROSS_COMPILE?=arm-linux-gnueabihf-
 makecmd=CROSS_COMPILE=$(CROSS_COMPILE) $(MAKE) -j $(processors) \
 	ARCH=arm CFLAGS=$(cflags)
 FSBL=/projects/green_mango/fsbl/Release/green_mango_fsbl.elf
+FPGA=/projects/green_mango/fpga.bit
 
 .PHONY: all
 all: boot.bin
@@ -15,8 +16,8 @@ u-boot arch/arm/dts/zynq-green-mango.dtb: common/* configs/* include/* arch/arm/
 u-boot.elf: u-boot
 	cp $< $@
 
-boot.bin: u-boot.elf $(FSBL)
-	@echo "img:{[bootloader]$(FSBL),u-boot.elf}" > boot.bif
+boot.bin: u-boot.elf $(FSBL) $(FPGA)
+	@echo "img:{[bootloader]$(FSBL),$(FPGA),u-boot.elf}" > boot.bif
 	/projects/zynq-mkbootimage/mkbootimage boot.bif $@
 
 .PHONY: dtb-install-remote

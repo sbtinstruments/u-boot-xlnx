@@ -50,6 +50,7 @@
 		interrupt-parent = <&gpio0>;
 		interrupts = <0 8>;
 		interrupt-controller;
+		wakeup-source;
 		onkey {
 			compatible = "dlg,da9063-onkey";
 		};

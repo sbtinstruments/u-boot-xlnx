@@ -10,7 +10,11 @@ program_flash=/opt/Xilinx/petalinux/tools/xsct/SDK/2018.3/bin/program_flash
 .PHONY: all
 all: boot.bin
 
-u-boot arch/arm/dts/zynq-green-mango.dtb: common/* configs/* include/* arch/arm/dts/*.dts
+u-boot arch/arm/dts/zynq-green-mango.dtb: common/* \
+                                          configs/* \
+                                          include/* \
+                                          arch/arm/dts/*.dts \
+                                          arch/arm/dts/*.dtsi
 	$(makecmd) zynq_green_mango_defconfig
 	$(makecmd)
 

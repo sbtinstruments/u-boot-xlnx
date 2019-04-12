@@ -5,6 +5,7 @@ makecmd=CROSS_COMPILE=$(CROSS_COMPILE) $(MAKE) -j $(processors) \
 	ARCH=arm CFLAGS=$(cflags)
 FSBL=/projects/green_mango/fsbl/Release/green_mango_fsbl.elf
 FPGA=/projects/green_mango/fpga.bit
+program_flash=/opt/Xilinx/petalinux/tools/xsct/SDK/2018.3/bin/program_flash
 
 .PHONY: all
 all: boot.bin
@@ -28,7 +29,7 @@ dtb-install-remote: arch/arm/dts/zynq-green-mango.dtb remote_host_defined
 
 .PHONY: program_flash
 program_flash: boot.bin $(FSBL)
-	program_flash -f boot.bin -offset 0 -flash_type qspi-x4-single \
+	$(program_flash) -f boot.bin -offset 0 -flash_type qspi-x4-single \
 		-fsbl $(FSBL) -cable type xilinx_tcf url TCP:127.0.0.1:3121
 
 .PHONY: distclean

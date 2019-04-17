@@ -3,8 +3,8 @@ cflags="-O2 -mtune=cortex-a9 -mfpu=neon -mfloat-abi=hard"
 CROSS_COMPILE?=arm-linux-gnueabihf-
 makecmd=CROSS_COMPILE=$(CROSS_COMPILE) $(MAKE) -j $(processors) \
 	ARCH=arm CFLAGS=$(cflags)
-FSBL=/projects/green_mango/fsbl/Release/green_mango_fsbl.elf
-FPGA=/projects/green_mango/fpga.bit
+FSBL=/projects/green-mango/firmware/fsbl/Release/green_mango_fsbl.elf
+FPGA=/projects/green-mango/firmware/board/fpga.bit
 program_flash=/opt/Xilinx/petalinux/tools/xsct/SDK/2018.3/bin/program_flash
 
 .PHONY: all

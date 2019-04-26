@@ -3,38 +3,25 @@ cflags="-O2 -mtune=cortex-a9 -mfpu=neon -mfloat-abi=hard"
 CROSS_COMPILE?=arm-linux-gnueabihf-
 makecmd=CROSS_COMPILE=$(CROSS_COMPILE) $(MAKE) -j $(processors) \
 	ARCH=arm CFLAGS=$(cflags)
-FSBL=/projects/green-mango/firmware/fsbl/Release/green_mango_fsbl.elf
-FPGA=/projects/green-mango/firmware/board/fpga.bit
-program_flash=/opt/Xilinx/petalinux/tools/xsct/SDK/2018.3/bin/program_flash
 
-.PHONY: all
-all: boot.bin
+.phony: all
+all: u-boot.elf \
+     arch/arm/dts/zynq-green-mango.dtb
 
-u-boot arch/arm/dts/zynq-green-mango.dtb: common/* \
-                                          configs/* \
-                                          include/* \
-                                          arch/arm/dts/*.dts \
-                                          arch/arm/dts/*.dtsi
+u-boot.elf \
+arch/arm/dts/zynq-green-mango.dtb: common/* \
+                                   configs/* \
+                                   include/* \
+                                   arch/arm/dts/*.dts \
+                                   arch/arm/dts/*.dtsi
 	$(makecmd) zynq_green_mango_defconfig
 	$(makecmd)
-
-u-boot.elf: u-boot
-	cp $< $@
-
-boot.bin: u-boot.elf $(FSBL) $(FPGA)
-	@echo "img:{[bootloader]$(FSBL),$(FPGA),u-boot.elf}" > boot.bif
-	/projects/zynq-mkbootimage/mkbootimage boot.bif $@
 
 .PHONY: dtb-install-remote
 dtb-install-remote: arch/arm/dts/zynq-green-mango.dtb remote_host_defined
 	ssh $(remote_host) "mount -o rw,remount \$$(readlink /media/system)"
 	scp $< $(remote_host):/boot/devicetree.dtb
 	ssh $(remote_host) "mount -o ro,remount \$$(readlink /media/system)"
-
-.PHONY: program_flash
-program_flash: boot.bin $(FSBL)
-	$(program_flash) -f boot.bin -offset 0 -flash_type qspi-x4-single \
-		-fsbl $(FSBL) -cable type xilinx_tcf url TCP:127.0.0.1:3121
 
 .PHONY: distclean
 distclean:

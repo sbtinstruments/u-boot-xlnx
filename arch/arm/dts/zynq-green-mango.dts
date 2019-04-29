@@ -22,6 +22,7 @@
 		mmc0 = &sdhci1;
 	};
 
+
 	memory@0 {
 		device_type = "memory";
 		reg = <0x0 0x40000000>;
@@ -53,6 +54,7 @@
 		interrupts = <0 IRQ_TYPE_LEVEL_LOW>;
 		interrupt-controller;
 		wakeup-source;
+		system-power-controller;
 		onkey {
 			compatible = "dlg,da9063-onkey";
 		};
@@ -62,6 +64,166 @@
 		wdt {
 			compatible = "dlg,da9063-watchdog";
 		};
+		regulators {
+			reg_zynq_ps_pl: bcores-merged {
+				regulator-name = "reg_zynq_ps_pl";
+				regulator-min-microvolt = <300000>;
+				regulator-max-microvolt = <1570000>;
+				regulator-min-microamp = <500000>;
+				regulator-max-microamp = <2000000>;
+				regulator-boot-on;
+				regulator-always-on;
+				regulator-state-mem {
+					regulator-on-in-suspend;
+				};
+			};
+			reg_mt41k256m16: bpro {
+				regulator-name = "reg_mt41k256m16";
+				regulator-min-microvolt = <530000>;
+				regulator-max-microvolt = <1800000>;
+				regulator-min-microamp = <500000>;
+				regulator-max-microamp = <2000000>;
+				regulator-boot-on;
+				regulator-always-on;
+				regulator-state-mem {
+					regulator-on-in-suspend;
+				};
+			};
+			reg_1v8: bmem {
+				regulator-name = "reg_1v8";
+				regulator-min-microvolt = <800000>;
+				regulator-max-microvolt = <3340000>;
+				regulator-min-microamp = <1500000>;
+				regulator-max-microamp = <3000000>;
+				regulator-boot-on;
+				regulator-always-on;
+				regulator-state-mem {
+					regulator-on-in-suspend;
+				};
+			};
+			reg_3v3: bio {
+				regulator-name = "reg_3v3";
+				regulator-min-microvolt = <800000>;
+				regulator-max-microvolt = <3340000>;
+				regulator-min-microamp = <1500000>;
+				regulator-max-microamp = <3000000>;
+				regulator-boot-on;
+				regulator-always-on;
+				regulator-state-mem {
+					regulator-on-in-suspend;
+				};
+			};
+			reg_unused_1v2: bperi {
+				regulator-name = "reg_unused_1v2";
+				regulator-min-microvolt = <800000>;
+				regulator-max-microvolt = <3340000>;
+				regulator-min-microamp = <1500000>;
+				regulator-max-microamp = <3000000>;
+				regulator-boot-on;
+				regulator-state-mem {
+					regulator-off-in-suspend;
+				};
+			};
+			reg_unused_v1: ldo1 {
+				regulator-name = "reg_unused_v1";
+				regulator-min-microvolt = <600000>;
+				regulator-max-microvolt = <1860000>;
+				regulator-boot-on;
+				regulator-state-mem {
+					regulator-off-in-suspend;
+				};
+			};
+			reg_unused_v2: ldo2 {
+				regulator-name = "reg_unused_v2";
+				regulator-min-microvolt = <600000>;
+				regulator-max-microvolt = <1860000>;
+				regulator-boot-on;
+				regulator-state-mem {
+					regulator-off-in-suspend;
+				};
+			};
+			reg_pl_bank33: ldo3 {
+				regulator-name = "reg_pl_bank33";
+				regulator-min-microvolt = <900000>;
+				regulator-max-microvolt = <3440000>;
+				regulator-boot-on;
+				regulator-state-mem {
+					regulator-off-in-suspend;
+				};
+			};
+			reg_pl_bank34: ldo4 {
+				regulator-name = "reg_pl_bank34";
+				regulator-min-microvolt = <900000>;
+				regulator-max-microvolt = <3440000>;
+				regulator-boot-on;
+				regulator-state-mem {
+					regulator-off-in-suspend;
+				};
+			};
+			reg_unused_v5: ldo5 {
+				regulator-name = "reg_unused_v5";
+				regulator-min-microvolt = <900000>;
+				regulator-max-microvolt = <3600000>;
+				regulator-boot-on;
+				regulator-state-mem {
+					regulator-off-in-suspend;
+				};
+			};
+			reg_unused_v6a: ldo6 {
+				regulator-name = "reg_unused_v6a";
+				regulator-min-microvolt = <900000>;
+				regulator-max-microvolt = <3600000>;
+				regulator-boot-on;
+				regulator-state-mem {
+					regulator-off-in-suspend;
+				};
+			};
+			reg_lis3dh: ldo7 {
+				regulator-name = "reg_lis3dh";
+				regulator-min-microvolt = <900000>;
+				regulator-max-microvolt = <3600000>;
+				regulator-boot-on;
+				regulator-state-mem {
+					regulator-off-in-suspend;
+				};
+			};
+			reg_unused_v8: ldo8 {
+				regulator-name = "reg_unused_v8";
+				regulator-min-microvolt = <900000>;
+				regulator-max-microvolt = <3600000>;
+				regulator-boot-on;
+				regulator-state-mem {
+					regulator-off-in-suspend;
+				};
+			};
+			reg_zynq_adc0: ldo9 {
+				regulator-name = "reg_zynq_adc0";
+				regulator-min-microvolt = <950000>;
+				regulator-max-microvolt = <3600000>;
+				regulator-boot-on;
+				regulator-state-mem {
+					regulator-off-in-suspend;
+				};
+			};
+			reg_LTC2145CUP_14: ldo10 {
+				regulator-name = "reg_LTC2145CUP_14";
+				regulator-min-microvolt = <900000>;
+				regulator-max-microvolt = <3600000>;
+				regulator-boot-on;
+				regulator-state-mem {
+					regulator-off-in-suspend;
+				};
+			};
+			reg_pl_bank35: ldo11 {
+				regulator-name = "reg_pl_bank35";
+				regulator-min-microvolt = <900000>;
+				regulator-max-microvolt = <3600000>;
+				regulator-boot-on;
+				regulator-state-mem {
+					regulator-off-in-suspend;
+				};
+			};
+		};
 	};
 	accel0: lis3dh@18 {
 		compatible = "st,lis3dh-accel";
@@ -69,6 +231,7 @@
 		st,drdy-int-pin = <1>;
 		interrupt-parent = <&gpio0>;
 		interrupts = <51 IRQ_TYPE_EDGE_RISING>;
+		vdd-supply = <&reg_lis3dh>;
 	};
 	temp0: tmp102@48 {
 		compatible = "ti,tmp102";

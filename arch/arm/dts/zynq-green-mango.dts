@@ -147,6 +147,7 @@
 				regulator-min-microvolt = <900000>;
 				regulator-max-microvolt = <3440000>;
 				regulator-boot-on;
+				regulator-always-on; /* Enable in overlay instead when PL is in use */
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
@@ -156,6 +157,7 @@
 				regulator-min-microvolt = <900000>;
 				regulator-max-microvolt = <3440000>;
 				regulator-boot-on;
+				regulator-always-on; /* Enable in overlay instead when PL is in use */
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
@@ -219,6 +221,7 @@
 				regulator-min-microvolt = <900000>;
 				regulator-max-microvolt = <3600000>;
 				regulator-boot-on;
+				regulator-always-on; /* Enable in overlay instead when PL is in use */
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};

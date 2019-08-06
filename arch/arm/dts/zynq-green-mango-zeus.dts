@@ -1,0 +1,56 @@
+/* SPDX-License-Identifier: GPL-2.0-or-later */
+/*
+ *	Copyright (C) 2019 Frederik Peter Aalund <fpa@sbtinstruments.com>
+ */
+/dts-v1/;
+#include "zynq-green-mango.dtsi"
+
+/ {
+	model = "SBT Instruments Zeus";
+	compatible = "sbt,green-mango-zeus",
+	             "sbt,green-mango",
+	             "xlnx,zynq-7000";
+};
+
+&amba {
+	backlight_pwm: timer@42800000 {
+		#pwm-cells = <2>;
+		clock-frequency = <100000000>;
+		clock-names = "s_axi_aclk";
+		clocks = <&clkc 15>;
+		compatible = "xlnx,pwm-xlnx";
+		interrupt-names = "interrupt";
+		interrupt-parent = <&intc>;
+		interrupts = <0 32 4>;
+		reg = <0x42800000 0x10000>;
+		xlnx,count-width = <0x10>;
+		xlnx,gen0-assert = <0x1>;
+		xlnx,gen1-assert = <0x1>;
+		xlnx,one-timer-only = <0x0>;
+		xlnx,trig0-assert = <0x1>;
+		xlnx,trig1-assert = <0x1>;
+	};
+
+	vunreg: regulator-vunreg {
+		compatible = "regulator-fixed";
+		regulator-name = "vunreg";
+		regulator-min-microvolt = <12000000>; // Arbitrary
+		regulator-max-microvolt = <12000000>; // Arbitrary
+		startup-delay-us = <100000>; // Arbitrary
+		enable-active-high;
+	};
+
+	backlight: backlight {
+		compatible = "pwm-backlight";
+		pwms = <&backlight_pwm 0 20000>;
+		pwm-names = "backlight";
+		power-supply = <&vunreg>;
+	};
+
+	display: mipi-dbi-type-b@43C10000 {
+		compatible = "urt,p220md-t";
+		reg = <0x43C10000 0x10000>;
+		reg-names = "mipi-dbi-type-b";
+		backlight = <&backlight>;
+	};
+};

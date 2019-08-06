@@ -270,7 +270,7 @@ dtb-$(CONFIG_ARCH_ZYNQ) += \
 	zynq-cse-qspi-x2-single.dtb \
 	zynq-cse-qspi-x2-stacked.dtb \
 	zynq-dlc20-rev1.0.dtb \
-	zynq-green-mango.dtb \
+	zynq-green-mango-zeus.dtb \
 	zynq-microzed.dtb \
 	zynq-minized.dtb \
 	zynq-picozed.dtb \

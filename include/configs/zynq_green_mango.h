@@ -2,7 +2,7 @@
 /*
  * (C) Copyright 2019 Frederik Peter Aalund <fpa@sbtinstruments.com>
  *
- * Configuration settings for the SBT Instruments Green Mango board.
+ * Configuration settings for the SBT Instruments Green Mango-based boards.
  * See zynq-common.h for Zynq common configs.
  *
  */
@@ -17,7 +17,6 @@
 /* Override default environment */
 #undef  CONFIG_EXTRA_ENV_SETTINGS
 #define CONFIG_EXTRA_ENV_SETTINGS	\
-	"fpa_test_from_uboot=123\0"	\
 	"ethaddr=00:0a:35:00:01:22\0"	\
 	"kernel_image=uImage\0"	\
 	"kernel_load_address=0x2080000\0" \
@@ -146,11 +145,5 @@
 		"bootm ${kernel_load_address} ${ramdisk_load_address} ${devicetree_load_address}\0" \
 		DFU_ALT_INFO \
 		BOOTENV
-/*
-echo "Loading from SD card to memory"
-fatload mmc 0:$active_partition 0x2001000 boot/uImage
-fatload mmc 0:$active_partition 0x3000000 boot/uramdisk.image.gz
-fatload mmc 0:$active_partition 0x6000000 boot/devicetree.dtb" \
-*/
 
 #endif /* __CONFIG_ZYNQ_GREEN_MANGO_H */

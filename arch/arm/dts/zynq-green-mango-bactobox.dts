@@ -1,0 +1,22 @@
+/* SPDX-License-Identifier: GPL-2.0-or-later */
+/*
+ *	Copyright (C) 2019 Frederik Peter Aalund <fpa@sbtinstruments.com>
+ */
+/dts-v1/;
+#include "zynq-green-mango.dtsi"
+
+/ {
+	model = "SBT Instruments BactoBox";
+	compatible = "sbt,green-mango-bactobox",
+	             "sbt,green-mango",
+	             "xlnx,zynq-7000";
+};
+
+&amba {
+	&adc_qspi {
+		&tia_adc {
+			// Compensate for inverted N and P signals.
+			clock-phase-delay = <90>;
+		};
+	};
+};

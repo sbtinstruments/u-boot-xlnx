@@ -34,10 +34,6 @@
 	vunreg: regulator-vunreg {
 		compatible = "regulator-fixed";
 		regulator-name = "vunreg";
-		regulator-min-microvolt = <12000000>; // Arbitrary
-		regulator-max-microvolt = <12000000>; // Arbitrary
-		startup-delay-us = <100000>; // Arbitrary
-		enable-active-high;
 	};
 
 	backlight: backlight {
@@ -45,6 +41,9 @@
 		pwms = <&backlight_pwm 0 20000>;
 		pwm-names = "backlight";
 		power-supply = <&vunreg>;
+		brightness-levels = <0 255>;
+		default-brightness-level = <255>;
+		num-interpolated-steps = <255>;
 	};
 
 	display: mipi-dbi-type-b@43C10000 {

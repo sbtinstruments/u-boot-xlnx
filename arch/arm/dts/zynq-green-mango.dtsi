@@ -63,10 +63,14 @@
 		rtc {
 			compatible = "dlg,da9063-rtc";
 		};
-		// TODO: Disabled for until the boards are OTPed
-		// wdt {
-		// 	compatible = "dlg,da9063-watchdog";
-		// };
+		wdt {
+			compatible = "dlg,da9063-watchdog";
+		};
+		gpio {
+			compatible = "dlg,da9063-gpio";
+			gpio-controller;
+			#gpio-cells = <2>;
+		};
 		regulators {
 			reg_zynq_ps_pl: bcores-merged {
 				regulator-name = "reg_zynq_ps_pl";
@@ -132,7 +136,6 @@
 				regulator-min-microvolt = <600000>;
 				regulator-max-microvolt = <1860000>;
 				regulator-boot-on;
-				regulator-always-on; /* Testing ADC LTC2145 */
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
@@ -142,7 +145,6 @@
 				regulator-min-microvolt = <600000>;
 				regulator-max-microvolt = <1860000>;
 				regulator-boot-on;
-				regulator-always-on; /* Testing ADC LTC2145 */
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
@@ -172,7 +174,6 @@
 				regulator-min-microvolt = <900000>;
 				regulator-max-microvolt = <3600000>;
 				regulator-boot-on;
-				regulator-always-on; /* Testing ADC LTC2145 */
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
@@ -182,7 +183,6 @@
 				regulator-min-microvolt = <900000>;
 				regulator-max-microvolt = <3600000>;
 				regulator-boot-on;
-				regulator-always-on; /* Testing ADC LTC2145 */
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
@@ -192,7 +192,6 @@
 				regulator-min-microvolt = <900000>;
 				regulator-max-microvolt = <3600000>;
 				regulator-boot-on;
-				regulator-always-on; /* Testing ADC LTC2145 */
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
@@ -202,7 +201,6 @@
 				regulator-min-microvolt = <900000>;
 				regulator-max-microvolt = <3600000>;
 				regulator-boot-on;
-				regulator-always-on; /* Testing ADC LTC2145 */
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
@@ -212,7 +210,6 @@
 				regulator-min-microvolt = <950000>;
 				regulator-max-microvolt = <3600000>;
 				regulator-boot-on;
-				regulator-always-on; /* Testing ADC LTC2145 */
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
@@ -238,6 +235,7 @@
 			};
 		};
 	};
+	// Consumes less than 0.1 W
 	accel0: lis3dh@18 {
 		compatible = "st,lis3dh-accel";
 		reg = <0x18>;
@@ -319,15 +317,17 @@
 };
 
 &amba {
-	reg_12v: regulator-12v {
+	reg_12v_and_5v_sw: regulator-12v-and-5v-sw {
 		compatible = "regulator-fixed";
-		regulator-name = "12v";
+		regulator-name = "12v-and-5v-sw";
 		regulator-min-microvolt = <12000000>;
 		regulator-max-microvolt = <12000000>;
 		gpio = <&gpio0 60 0 GPIO_ACTIVE_HIGH>;
 		startup-delay-us = <100000>; // Arbitrary
 		enable-active-high;
-		regulator-always-on; // TODO: Rework
+		regulator-state-mem {
+			regulator-off-in-suspend;
+		};
 	};
 
 	reg_osc_vcc_2v5: regulator-osc-vcc-2v5 {
@@ -339,6 +339,9 @@
 		startup-delay-us = <100000>; // Arbitrary
 		enable-active-high;
 		regulator-always-on; // TODO: Testing on works-like setup
+		regulator-state-mem {
+			regulator-off-in-suspend;
+		};
 	};
 
 	osc_125mhz: oscillator-125mhz {
@@ -544,6 +547,7 @@
 		                   "adc-site1",
 		                   "dac-site0",
 		                   "dac-site1";
+		amp-supply = <&reg_12v_and_5v_sw>;
 	};
 
 	gpio-keys {

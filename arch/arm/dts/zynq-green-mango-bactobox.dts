@@ -13,8 +13,8 @@
 };
 
 &amba {
-	&adc_qspi {
-		&tia_adc {
+	adc_qspi {
+		tia_adc {
 			// Compensate for inverted N and P signals.
 			clock-phase-delay = <90>;
 		};

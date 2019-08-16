@@ -582,40 +582,4 @@
 		default-brightness-level = <255>;
 		num-interpolated-steps = <255>;
 	};
-
-	gpio-keys {
-		compatible = "gpio-keys";
-		#address-cells = <1>;
-		#size-cells = <0>;
-		up {
-			label = "up";
-			gpios = <&gpio0 54 0 GPIO_ACTIVE_HIGH>;
-			linux,code = <103>; // up
-		};
-		right {
-			label = "right";
-			gpios = <&gpio0 55 0 GPIO_ACTIVE_LOW>;
-			linux,code = <106>; // right
-		};
-		down {
-			label = "down";
-			gpios = <&gpio0 56 0 GPIO_ACTIVE_LOW>;
-			linux,code = <108>; // down
-		};
-		left {
-			label = "left";
-			gpios = <&gpio0 57 0 GPIO_ACTIVE_LOW>;
-			linux,code = <105>; // left
-		};
-		swab1 {
-			label = "swab1";
-			gpios = <&gpio0 58 0 GPIO_ACTIVE_LOW>;
-			linux,code = <2>; // 1
-		};
-		swab2 {
-			label = "swab2";
-			gpios = <&gpio0 59 0 GPIO_ACTIVE_LOW>;
-			linux,code = <3>; // 2
-		};
-	};
 };

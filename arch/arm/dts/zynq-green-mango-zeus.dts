@@ -19,4 +19,38 @@
 		reg-names = "mipi-dbi-type-b";
 		backlight = <&backlight>;
 	};
+
+	gpio-keys {
+		compatible = "gpio-keys";
+		up {
+			label = "up";
+			gpios = <&gpio0 54 0 GPIO_ACTIVE_HIGH>;
+			linux,code = <103>;
+		};
+		right {
+			label = "right";
+			gpios = <&gpio0 55 0 GPIO_ACTIVE_HIGH>;
+			linux,code = <106>;
+		};
+		down {
+			label = "down";
+			gpios = <&gpio0 56 0 GPIO_ACTIVE_HIGH>;
+			linux,code = <108>;
+		};
+		left {
+			label = "left";
+			gpios = <&gpio0 57 0 GPIO_ACTIVE_HIGH>;
+			linux,code = <105>;
+		};
+		swab1 {
+			label = "swab1";
+			gpios = <&gpio0 58 0 GPIO_ACTIVE_HIGH>;
+			linux,code = <2>; // 1
+		};
+		swab2 {
+			label = "swab2";
+			gpios = <&gpio0 59 0 GPIO_ACTIVE_HIGH>;
+			linux,code = <3>; // 2
+		};
+	};
 };

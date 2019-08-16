@@ -441,7 +441,7 @@
 	i2c2: i2c@41600000 {
 		#address-cells = <1>;
 		#size-cells = <0>;
-		clock-names = "s_axi_aclk";
+		clock-names = "s_axi_aclk"; // TODO: Is this clock name correct? Check what the driver actually expects. This may affect other 's_axi_aclk' nodes.
 		clocks = <&clkc 15>;
 		compatible = "xlnx,axi-iic-2.0", "xlnx,xps-iic-2.00.a";
 		interrupt-names = "iic2intc_irpt";
@@ -477,7 +477,7 @@
 		#address-cells = <1>;
 		#size-cells = <0>;
 		bits-per-word = <8>;
-		clock-names = "ext_spi_clk", "s_axi_aclk";
+		clock-names = "spi_clk", "axi_clk";
 		clocks = <&clkc 15>, <&clkc 15>;
 		compatible = "xlnx,axi-quad-spi-3.2", "xlnx,xps-spi-2.00.a";
 		fifo-size = <16>;
@@ -509,7 +509,7 @@
 		#address-cells = <1>;
 		#size-cells = <0>;
 		bits-per-word = <8>;
-		clock-names = "ext_spi_clk", "s_axi_aclk";
+		clock-names = "spi_clk", "axi_clk";
 		clocks = <&clkc 15>, <&clkc 15>;
 		compatible = "xlnx,axi-quad-spi-3.2", "xlnx,xps-spi-2.00.a";
 		fifo-size = <16>;
@@ -548,6 +548,39 @@
 		                   "dac-site0",
 		                   "dac-site1";
 		amp-supply = <&reg_12v_and_5v_sw>;
+	};
+
+	backlight_pwm: timer@42800000 {
+		#pwm-cells = <2>;
+		clock-frequency = <100000000>;
+		clock-names = "s_axi_aclk";
+		clocks = <&clkc 15>;
+		compatible = "xlnx,pwm-xlnx";
+		interrupt-names = "interrupt";
+		interrupt-parent = <&intc>;
+		interrupts = <0 32 4>;
+		reg = <0x42800000 0x10000>;
+		xlnx,count-width = <0x10>;
+		xlnx,gen0-assert = <0x1>;
+		xlnx,gen1-assert = <0x1>;
+		xlnx,one-timer-only = <0x0>;
+		xlnx,trig0-assert = <0x1>;
+		xlnx,trig1-assert = <0x1>;
+	};
+
+	vunreg: regulator-vunreg {
+		compatible = "regulator-fixed";
+		regulator-name = "vunreg";
+	};
+
+	backlight: backlight {
+		compatible = "pwm-backlight";
+		pwms = <&backlight_pwm 0 20000>;
+		pwm-names = "backlight";
+		power-supply = <&vunreg>;
+		brightness-levels = <0 255>;
+		default-brightness-level = <255>;
+		num-interpolated-steps = <255>;
 	};
 
 	gpio-keys {

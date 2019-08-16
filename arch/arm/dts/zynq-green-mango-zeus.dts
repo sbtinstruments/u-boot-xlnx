@@ -13,39 +13,6 @@
 };
 
 &amba {
-	backlight_pwm: timer@42800000 {
-		#pwm-cells = <2>;
-		clock-frequency = <100000000>;
-		clock-names = "s_axi_aclk";
-		clocks = <&clkc 15>;
-		compatible = "xlnx,pwm-xlnx";
-		interrupt-names = "interrupt";
-		interrupt-parent = <&intc>;
-		interrupts = <0 32 4>;
-		reg = <0x42800000 0x10000>;
-		xlnx,count-width = <0x10>;
-		xlnx,gen0-assert = <0x1>;
-		xlnx,gen1-assert = <0x1>;
-		xlnx,one-timer-only = <0x0>;
-		xlnx,trig0-assert = <0x1>;
-		xlnx,trig1-assert = <0x1>;
-	};
-
-	vunreg: regulator-vunreg {
-		compatible = "regulator-fixed";
-		regulator-name = "vunreg";
-	};
-
-	backlight: backlight {
-		compatible = "pwm-backlight";
-		pwms = <&backlight_pwm 0 20000>;
-		pwm-names = "backlight";
-		power-supply = <&vunreg>;
-		brightness-levels = <0 255>;
-		default-brightness-level = <255>;
-		num-interpolated-steps = <255>;
-	};
-
 	display: mipi-dbi-type-b@43C10000 {
 		compatible = "urt,p220md-t";
 		reg = <0x43C10000 0x10000>;

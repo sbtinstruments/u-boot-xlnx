@@ -19,4 +19,52 @@
 			clock-phase-delay = <90>;
 		};
 	};
+
+	display_gpio: gpio@41210000 {
+		#gpio-cells = <3>;
+		clock-names = "s_axi_aclk";
+		clocks = <&clkc 15>;
+		compatible = "xlnx,axi-gpio-2.0", "xlnx,xps-gpio-1.00.a";
+		gpio-controller ;
+		reg = <0x41210000 0x10000>;
+		xlnx,all-inputs = <0x0>;
+		xlnx,all-inputs-2 = <0x0>;
+		xlnx,all-outputs = <0x0>;
+		xlnx,all-outputs-2 = <0x0>;
+		xlnx,dout-default = <0x00000000>;
+		xlnx,dout-default-2 = <0x00000000>;
+		xlnx,gpio-width = <0x2>;
+		xlnx,gpio2-width = <0x20>;
+		xlnx,interrupt-present = <0x0>;
+		xlnx,is-dual = <0x0>;
+		xlnx,tri-default = <0xFFFFFFFF>;
+		xlnx,tri-default-2 = <0xFFFFFFFF>;
+	};
+
+	display_qspi: axi_quad_spi@41e20000 {
+		#address-cells = <1>;
+		#size-cells = <0>;
+		bits-per-word = <8>;
+		clock-names = "spi_clk", "axi_clk";
+		clocks = <&clkc 15>, <&clkc 15>;
+		compatible = "xlnx,axi-quad-spi-3.2", "xlnx,xps-spi-2.00.a";
+		fifo-size = <16>;
+		interrupt-names = "ip2intc_irpt";
+		interrupt-parent = <&intc>;
+		interrupts = <0 36 1>;
+		num-cs = <0x1>;
+		reg = <0x41e20000 0x10000>;
+		xlnx,num-ss-bits = <0x1>;
+		xlnx,spi-mode = <0>;
+
+		display: 8252md-t@0 {
+			compatible = "solomon,ssd2119";
+			reg = <0>;
+			spi-max-frequency = <50000000>;
+			buswidth = <8>;
+			dc-gpios = <&display_gpio 0 0 GPIO_ACTIVE_HIGH>;
+			reset-gpios = <&display_gpio 1 0 GPIO_ACTIVE_HIGH>;
+			rotate = <0>;
+		};
+	};
 };

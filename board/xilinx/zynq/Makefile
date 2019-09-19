@@ -36,6 +36,10 @@ obj-$(CONFIG_CMD_ZYNQ) += cmds.o
 obj-$(CONFIG_CMD_ZYNQ_RSA) += bootimg.o
 endif
 
+ifeq ($(hw-platform-y),zynq-green-mango-zeus)
+obj-y += zynq-green-mango-zeus/cmds.o
+endif
+
 obj-$(CONFIG_SPL_BUILD) += $(init-objs)
 
 # Suppress "warning: function declaration isn't a prototype"

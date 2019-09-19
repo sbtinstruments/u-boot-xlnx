@@ -24,6 +24,7 @@
 	"ramdisk_load_address=0x4000000\0"	\
 	"devicetree_image=devicetree.dtb\0"	\
 	"devicetree_load_address=0x2000000\0"	\
+	"splash_load_address=0x2000000\0" \
 	"bitstream_image=system.bit.bin\0"	\
 	"boot_image=BOOT.bin\0"	\
 	"loadbit_addr=0x100000\0"	\
@@ -143,7 +144,11 @@
 		"load mmc 0:${active_partition} ${devicetree_load_address} boot/${devicetree_image} && " \
 		"load mmc 0:${active_partition} ${ramdisk_load_address} boot/${ramdisk_image} && " \
 		"bootm ${kernel_load_address} ${ramdisk_load_address} ${devicetree_load_address}\0" \
-		DFU_ALT_INFO \
-		BOOTENV
+	"splash_screen=fatload mmc 0:3 ${splash_load_address} /etc/graphics/splash.rgb565 80004 && " \
+		"zeus display init && " \
+		"zeus display clear.rgb565 0xFFFF 0 320 0 480 && " \
+		"zeus display write.rgb565 ${splash_load_address} 60 260 140 340\0" \
+	DFU_ALT_INFO \
+	BOOTENV
 
 #endif /* __CONFIG_ZYNQ_GREEN_MANGO_H */

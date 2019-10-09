@@ -144,9 +144,10 @@
 		"load mmc 0:${active_partition} ${devicetree_load_address} boot/${devicetree_image} && " \
 		"load mmc 0:${active_partition} ${ramdisk_load_address} boot/${ramdisk_image} && " \
 		"bootm ${kernel_load_address} ${ramdisk_load_address} ${devicetree_load_address}\0" \
-	"splash_screen=fatload mmc 0:3 ${splash_load_address} /etc/graphics/splash.rgb565 80004 && " \
+	"splash_screen=echo Showing splash screen.. && " \
 		"zeus display init && " \
 		"zeus display clear.rgb565 0xFFFF 0 320 0 480 && " \
+		"load mmc 0:3 ${splash_load_address} /splash.rgb565 80004 && " \
 		"zeus display write.rgb565 ${splash_load_address} 60 260 140 340\0" \
 	DFU_ALT_INFO \
 	BOOTENV

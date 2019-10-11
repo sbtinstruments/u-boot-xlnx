@@ -141,9 +141,8 @@
 		"echo Active system partition: ${active_partition} && " \
 		"echo Copying Linux from SD to RAM... && " \
 		"load mmc 0:${active_partition} ${kernel_load_address} boot/${kernel_image} && " \
-		"load mmc 0:${active_partition} ${devicetree_load_address} boot/${devicetree_image} && " \
 		"load mmc 0:${active_partition} ${ramdisk_load_address} boot/${ramdisk_image} && " \
-		"bootm ${kernel_load_address} ${ramdisk_load_address} ${devicetree_load_address}\0" \
+		"bootm ${kernel_load_address} ${ramdisk_load_address} ${fdtcontroladdr}\0" \
 	"splash_screen=echo Showing splash screen.. && " \
 		"zeus display init && " \
 		"zeus display clear.rgb565 0xFFFF 0 320 0 480 && " \

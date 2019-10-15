@@ -14,6 +14,8 @@
 
 #include <configs/zynq-common.h>
 
+#define CONFIG_TFTP_PORT
+
 /* Override default environment */
 #undef  CONFIG_EXTRA_ENV_SETTINGS
 #define CONFIG_EXTRA_ENV_SETTINGS	\

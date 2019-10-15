@@ -13,34 +13,62 @@
 };
 
 &amba {
+	adc_qspi: axi_quad_spi@41e10000 {
+		tia_adc: ltc2145@0 {
+			clock-phase-delay = <45>;
+			invert-clock;
+			output-mode = "ddr-lvds";
+			// internal-termination;
+			// test-pattern = "alternating";
+			// power-control = "channel2-nap";
+			// alternate-bit-polarity;
+		};
+	};
+
+	dac_qspi: axi_quad_spi@41e00000 {
+		tia_dac: ad9704@0 {
+			diff-clock-input;
+		};
+	};
+
 	display: mipi-dbi-type-b@43C10000 {
 		compatible = "urt,p220md-t";
 		reg = <0x43C10000 0x10000>;
 		reg-names = "mipi-dbi-type-b";
-		backlight = <&backlight>;
+		// Backlight has been removed from this node since the display turns
+		// it off during init. We want the splash screen to linger.
+		// backlight = <&backlight>;
+		// Init is done by u-boot. Additionally, this allows the splash screen
+		// to linger until the UI is loaded.
+		skip-panel-init;
 	};
 
 	gpio-keys {
 		compatible = "gpio-keys";
+		left {
+			label = "left";
+			gpios = <&gpio0 62 0 GPIO_ACTIVE_HIGH>;
+			linux,code = <105>;
+		};
+		ok {
+			label = "ok";
+			gpios = <&gpio0 54 0 GPIO_ACTIVE_HIGH>;
+			linux,code = <28>; // enter
+		};
 		up {
 			label = "up";
-			gpios = <&gpio0 54 0 GPIO_ACTIVE_HIGH>;
+			gpios = <&gpio0 55 0 GPIO_ACTIVE_HIGH>;
 			linux,code = <103>;
 		};
 		right {
 			label = "right";
-			gpios = <&gpio0 55 0 GPIO_ACTIVE_HIGH>;
+			gpios = <&gpio0 56 0 GPIO_ACTIVE_HIGH>;
 			linux,code = <106>;
 		};
 		down {
 			label = "down";
-			gpios = <&gpio0 56 0 GPIO_ACTIVE_HIGH>;
-			linux,code = <108>;
-		};
-		left {
-			label = "left";
 			gpios = <&gpio0 57 0 GPIO_ACTIVE_HIGH>;
-			linux,code = <105>;
+			linux,code = <108>;
 		};
 		swab1 {
 			label = "swab1";

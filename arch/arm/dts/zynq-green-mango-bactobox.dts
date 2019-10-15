@@ -13,10 +13,16 @@
 };
 
 &amba {
-	adc_qspi {
-		tia_adc {
+	adc_qspi: axi_quad_spi@41e10000 {
+		tia_adc: ltc2145@0 {
 			// Compensate for inverted N and P signals.
 			clock-phase-delay = <90>;
+		};
+	};
+
+	dac_qspi: axi_quad_spi@41e00000 {
+		tia_dac: ad9704@0 {
+			deskew-mode;
 		};
 	};
 
@@ -51,7 +57,7 @@
 		fifo-size = <16>;
 		interrupt-names = "ip2intc_irpt";
 		interrupt-parent = <&intc>;
-		interrupts = <0 36 1>;
+		interrupts = <0 52 1>;
 		num-cs = <0x1>;
 		reg = <0x41e20000 0x10000>;
 		xlnx,num-ss-bits = <0x1>;

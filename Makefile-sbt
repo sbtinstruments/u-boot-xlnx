@@ -1,44 +1,46 @@
-processors=$(shell grep -c ^processor /proc/cpuinfo)
-cflags="-O2 -mtune=cortex-a9 -mfpu=neon -mfloat-abi=hard"
+PROCESSORS=$(shell grep -c ^processor /proc/cpuinfo)
+CFLAGS="-O2 -mtune=cortex-a9 -mfpu=neon -mfloat-abi=hard"
 CROSS_COMPILE?=arm-linux-gnueabihf-
-makecmd=CROSS_COMPILE=$(CROSS_COMPILE) $(MAKE) -j $(processors) \
-	ARCH=arm CFLAGS=$(cflags)
+UBOOT_MAKE=CROSS_COMPILE=$(CROSS_COMPILE) $(MAKE) -j $(PROCESSORS) \
+	ARCH=arm CFLAGS=$(CFLAGS)
 
-.phony: all
-all: target_defined \
-     u-boot.elf \
-     arch/arm/dts/zynq-green-mango-$(target).dtb
 
-u-boot.elf \
-arch/arm/dts/zynq-green-mango-$(target).dtb: target_defined \
-                                             common/* \
-                                             configs/* \
-                                             include/* \
-                                             arch/arm/dts/*.dts \
-                                             arch/arm/dts/*.dtsi
-	$(makecmd) zynq_green_mango_$(target)_defconfig
-	$(makecmd)
 
-.PHONY: dtb-install-remote
-dtb-install-remote: arch/arm/dts/zynq-green-mango-$(target).dtb \
-                    target_defined \
-                    remote_host_defined
-	ssh $(remote_host) "mount -o rw,remount \$$(readlink /media/system)"
-	scp $< $(remote_host):/boot/devicetree.dtb
-	ssh $(remote_host) "mount -o ro,remount \$$(readlink /media/system)"
+.PHONY: all
+all: u-boot.elf
 
+
+
+###############################################################################
+### U-boot ELF file
+###############################################################################
+u-boot.elf: .config \
+            common/* \
+            configs/* \
+            include/* \
+            arch/arm/dts/*.dts \
+            arch/arm/dts/*.dtsi
+	$(UBOOT_MAKE)
+
+
+
+###############################################################################
+### Defconfig
+###############################################################################
+.config: TARGET_defined configs/zynq_green_mango_$(TARGET)_defconfig
+	$(UBOOT_MAKE) zynq_green_mango_$(TARGET)_defconfig
+
+.PHONY: TARGET_defined
+TARGET_defined:
+ifndef TARGET
+	$(error "The 'TARGET' environment variable is not set. Set it to 'zeus' or 'bactobox'.")
+endif
+
+
+
+###############################################################################
+### Housekeeping
+###############################################################################
 .PHONY: distclean
 distclean:
-	$(makecmd) distclean
-
-.PHONY: remote_host_defined
-remote_host_defined:
-ifndef remote_host
-	$(error remote_host is not set)
-endif
-
-.PHONY: target_defined
-target_defined:
-ifndef target
-	$(error "The 'target' environment variable is not set. Set it to 'zeus' or 'bactobox'.")
-endif
+	$(UBOOT_MAKE) distclean

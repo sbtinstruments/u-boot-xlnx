@@ -13,7 +13,7 @@ CONFIG_FIT_SIGNATURE=y
 CONFIG_FIT_VERBOSE=y
 CONFIG_IMAGE_FORMAT_LEGACY=y
 CONFIG_BOOTDELAY=0
-CONFIG_BOOTCOMMAND="run splash_screen; run versioned_sdboot || run distro_bootcmd"
+CONFIG_BOOTCOMMAND="run splash_screen; run dualcopy_mmcboot || run distro_bootcmd"
 # CONFIG_DISPLAY_CPUINFO is not set
 CONFIG_SPL_STACK_R=y
 CONFIG_SPL_OS_BOOT=y

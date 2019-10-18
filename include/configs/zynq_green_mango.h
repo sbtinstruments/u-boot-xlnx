@@ -121,26 +121,20 @@
 		"tftpboot 0x100000 ${boot_image} && " \
 		"zynqrsa 0x100000 && " \
 		"bootm ${kernel_load_address} ${ramdisk_load_address} ${devicetree_load_address}\0" \
-	"load_system_ver_address=0x2000000\0" \
-	"load_system_ver_path=boot/version.txt\0" \
-	"load_system0_ver=load mmc 0:1 ${load_system_ver_address} ${load_system_ver_path}\0" \
-	"load_system1_ver=load mmc 0:2 ${load_system_ver_address} ${load_system_ver_path}\0" \
-	"import_system_ver=env import -t $fileaddr $filesize\0" \
-	"set_system0_version=if run load_system0_ver; then " \
-		"run import_system_ver; " \
-	"fi\0" \
-	"set_system1_version=if run load_system1_ver; then " \
-		"run import_system_ver; " \
-	"fi\0" \
-	"versioned_sdboot=echo Determining active system partition && " \
-		"run set_system0_version; " \
-		"run set_system1_version; " \
-		"if test \"${system0_version}\" -gt \"${system1_version}\"; then " /* The active partition is the one with the greatest version number */ \
-			"setenv active_partition 1; " /* System 0 */ \
-		"else; " \
-			"setenv active_partition 2; " /* System 1 */ \
+	"dualcopy_mmcboot=echo Determining active system partition && " \
+		"if test \"${active_system}\" -eq \"0\"; then " \
+			"set determined_active_system 0; " \
+			"setenv active_partition 1; " \
+		"elif test \"${active_system}\" -eq \"1\"; then " \
+			"set determined_active_system 1; " \
+			"setenv active_partition 2; " \
+		"else " \
+			"echo \"Could not determine which system is the active one.\"; " \
+			"echo \"Assuming that system 0 is the active one.\"; " \
+			"set determined_active_system 0; " \
+			"setenv active_partition 1; " \
 		"fi; " \
-		"echo Active system partition: ${active_partition} && " \
+		"echo Active system is ${determined_active_system} (MMC partition is ${active_partition}) && " \
 		"echo Copying Linux from SD to RAM... && " \
 		"load mmc 0:${active_partition} ${kernel_load_address} boot/${kernel_image} && " \
 		"load mmc 0:${active_partition} ${ramdisk_load_address} boot/${ramdisk_image} && " \

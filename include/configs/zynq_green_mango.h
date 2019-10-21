@@ -19,6 +19,7 @@
 /* Override default environment */
 #undef  CONFIG_EXTRA_ENV_SETTINGS
 #define CONFIG_EXTRA_ENV_SETTINGS	\
+	"active_system=0\0"	\
 	"ethaddr=00:0a:35:00:01:22\0"	\
 	"kernel_image=uImage\0"	\
 	"kernel_load_address=0x2080000\0" \

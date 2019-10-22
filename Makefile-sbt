@@ -14,7 +14,8 @@ all: u-boot.elf
 ###############################################################################
 ### U-boot ELF file
 ###############################################################################
-u-boot.elf: .config \
+u-boot.elf: set-version \
+            .config \
             common/* \
             configs/* \
             include/* \
@@ -34,6 +35,27 @@ u-boot.elf: .config \
 TARGET_defined:
 ifndef TARGET
 	$(error "The 'TARGET' environment variable is not set. Set it to 'zeus' or 'bactobox'.")
+endif
+
+
+
+###############################################################################
+### Firmware version
+###############################################################################
+.PHONY: set-version
+set-version: FIRMWARE_VERSION_defined
+	@# Replace in given file
+	sed "s/{FIRMWARE_VERSION}/$$FIRMWARE_VERSION/g" \
+	    include/configs/zynq_green_mango.h.in \
+	    > /tmp/u-boot-set-version-output
+	@# Only touch files if the checksum is different. This way,
+	@# we avoid unnecessary rebuilds when make is called.
+	rsync -c /tmp/u-boot-set-version-output include/configs/zynq_green_mango.h
+
+.PHONY: FIRMWARE_VERSION_defined
+FIRMWARE_VERSION_defined:
+ifndef FIRMWARE_VERSION
+	$(error "The 'FIRMWARE_VERSION' environment variable is not set.")
 endif
 
 

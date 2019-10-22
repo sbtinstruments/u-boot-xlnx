@@ -93,3 +93,6 @@ GTAGS
 *.orig
 *~
 \#*#
+
+# output from .in files
+/include/configs/zynq_green_mango.h

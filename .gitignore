@@ -99,3 +99,6 @@ GTAGS
 
 # Python cache
 __pycache__
+
+# output from .in files
+/include/configs/zynq_green_mango.h

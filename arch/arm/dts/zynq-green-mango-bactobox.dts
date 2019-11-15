@@ -78,22 +78,26 @@
 		compatible = "gpio-keys";
 		measure {
 			label = "measure";
-			gpios = <&gpio0 54 0 GPIO_ACTIVE_HIGH>;
+			interrupt-parent = <&gpio0>;
+			interrupts = <54 IRQ_TYPE_LEVEL_LOW>;
 			linux,code = <50>; // m
 		};
 		stop {
 			label = "stop";
-			gpios = <&gpio0 55 0 GPIO_ACTIVE_HIGH>;
+			interrupt-parent = <&gpio0>;
+			interrupts = <55 IRQ_TYPE_LEVEL_LOW>;
 			linux,code = <1>; // escape
 		};
 		empty {
 			label = "empty";
-			gpios = <&gpio0 56 0 GPIO_ACTIVE_HIGH>;
+			interrupt-parent = <&gpio0>;
+			interrupts = <56 IRQ_TYPE_LEVEL_LOW>;
 			linux,code = <18>; // e
 		};
 		clean {
 			label = "clean";
-			gpios = <&gpio0 57 0 GPIO_ACTIVE_HIGH>;
+			interrupt-parent = <&gpio0>;
+			interrupts = <57 IRQ_TYPE_LEVEL_LOW>;
 			linux,code = <46>; // c
 		};
 	};

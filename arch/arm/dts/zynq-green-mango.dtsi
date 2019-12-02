@@ -210,6 +210,7 @@
 				regulator-min-microvolt = <950000>;
 				regulator-max-microvolt = <3600000>;
 				regulator-boot-on;
+				regulator-always-on; /* We use it for temperature and voltage readings */
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};

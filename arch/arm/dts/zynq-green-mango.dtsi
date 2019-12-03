@@ -249,10 +249,6 @@
 		compatible = "ti,tmp102";
 		reg = <0x48>;
 	};
-	battery0: max17205@36 {
-		compatible = "maxim,max17205";
-		reg = <0x36>;
-	};
 };
 
 &qspi {

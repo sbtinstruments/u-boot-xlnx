@@ -12,6 +12,13 @@
 	             "xlnx,zynq-7000";
 };
 
+&i2c0 {
+	battery0: max17205@36 {
+		compatible = "maxim,max17205";
+		reg = <0x36>;
+	};
+};
+
 &amba {
 	adc_qspi: axi_quad_spi@41e10000 {
 		tia_adc: ltc2145@0 {

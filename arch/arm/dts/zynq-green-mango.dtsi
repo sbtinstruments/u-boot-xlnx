@@ -393,6 +393,14 @@
 		xlnx,trig1-assert = <0x1>;
 	};
 
+	stepper_ref_reg: regulator@stepper_step_pwm {
+		compatible = "pwm-regulator";
+		pwms = <&stepper_ref_pwm 0 10000>; // 100 KHz
+		regulator-min-microvolt = <0>;
+		regulator-max-microvolt = <3300000>;
+		regulator-name = "stepper_ref";
+	};
+
 	stepper {
 		compatible = "tmc2100";
 		cfg-gpios = <&stepper_gpio 0 0 GPIO_ACTIVE_HIGH>,
@@ -405,9 +413,11 @@
 		dir-gpios = <&stepper_gpio 7 0 GPIO_ACTIVE_HIGH>;
 		index-gpios = <&stepper_gpio 8 0 GPIO_ACTIVE_HIGH>;
 		error-gpios = <&stepper_gpio 9 0 GPIO_ACTIVE_HIGH>;
-		pwms = <&stepper_ref_pwm 0 10000>, // 100 KHz
-		       <&stepper_step_pwm 0 0>;
-		pwm-names = "ref", "step";
+		/* 1 Hz is just so that Linux doesn't complain on initialization. The
+		 * actual frequency is set by the driver. */
+		pwms = <&stepper_step_pwm 0 1>;
+		pwm-names = "step";
+		ref-supply = <&stepper_ref_reg>;
 		// cfg3 = "open"; // This is the syntax used to set CFG pins
 	};
 

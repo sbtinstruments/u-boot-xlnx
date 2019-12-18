@@ -418,7 +418,8 @@
 		pwms = <&stepper_step_pwm 0 1>;
 		pwm-names = "step";
 		ref-supply = <&stepper_ref_reg>;
-		// cfg3 = "open"; // This is the syntax used to set CFG pins
+		cfg3 = "open"; /* Use external sense resistor. Scale current via ref-voltage. */
+		ref-voltage = <1700>; /* Must be between 500 and 2500 mV. */
 	};
 
 	/* The liquid sensor (OPB350) consists of:

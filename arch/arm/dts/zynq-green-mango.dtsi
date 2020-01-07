@@ -288,7 +288,7 @@
 };
 
 &gpio0 {
-	emio-gpio-width = <10>;
+	emio-gpio-width = <11>;
 	gpio-mask-high = <0x0>;
 	gpio-mask-low = <0x5600>;
 };
@@ -324,7 +324,13 @@
 		gpio = <&gpio0 61 0 GPIO_ACTIVE_HIGH>;
 		startup-delay-us = <100000>; // Arbitrary
 		enable-active-high;
-		regulator-always-on; // TODO: Testing on works-like setup
+		/* This regulator powers the 125 MHz oscillator that is used for
+		 * many FPGA-related operations. For now, we choose to simply
+		 * enable it indefinitely. With time, we can change this and
+		 * instead use runtime power management features to toggle the
+		 * regulator on and off as necessary.
+		 */
+		regulator-always-on;
 		regulator-state-mem {
 			regulator-off-in-suspend;
 		};

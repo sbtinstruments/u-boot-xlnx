@@ -15,14 +15,17 @@
 &amba {
 	adc_qspi: axi_quad_spi@41e10000 {
 		tia_adc: ltc2145@0 {
-			// Compensate for inverted N and P signals.
-			clock-phase-delay = <90>;
+			// test-pattern = "all-zero";
+			clock-phase-delay = <45>;
+			invert-clock;
+			output-mode = "ddr-lvds";
 		};
 	};
 
 	dac_qspi: axi_quad_spi@41e00000 {
 		tia_dac: ad9704@0 {
-			deskew-mode;
+			// deskew-mode;
+			diff-clock-input;
 		};
 	};
 
@@ -31,7 +34,7 @@
 		clock-names = "s_axi_aclk";
 		clocks = <&clkc 15>;
 		compatible = "xlnx,axi-gpio-2.0", "xlnx,xps-gpio-1.00.a";
-		gpio-controller ;
+		gpio-controller;
 		reg = <0x41210000 0x10000>;
 		xlnx,all-inputs = <0x0>;
 		xlnx,all-inputs-2 = <0x0>;
@@ -74,30 +77,44 @@
 		};
 	};
 
+	/* HACK: Just to pull the GPIO down */
+	reg_tia_a2: regulator-tia-a2 {
+		compatible = "regulator-fixed";
+		regulator-name = "tia-a2";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		gpio = <&gpio0 61 0 GPIO_ACTIVE_HIGH>;
+		startup-delay-us = <100000>; // Arbitrary
+		enable-active-high;
+		regulator-state-mem {
+			regulator-off-in-suspend;
+		};
+	};
+
 	gpio-keys {
 		compatible = "gpio-keys";
 		measure {
 			label = "measure";
 			interrupt-parent = <&gpio0>;
-			interrupts = <54 IRQ_TYPE_LEVEL_LOW>;
+			interrupts = <57 IRQ_TYPE_EDGE_RISING>;
 			linux,code = <50>; // m
 		};
 		stop {
 			label = "stop";
 			interrupt-parent = <&gpio0>;
-			interrupts = <55 IRQ_TYPE_LEVEL_LOW>;
+			interrupts = <56 IRQ_TYPE_EDGE_RISING>;
 			linux,code = <1>; // escape
 		};
 		empty {
 			label = "empty";
 			interrupt-parent = <&gpio0>;
-			interrupts = <56 IRQ_TYPE_LEVEL_LOW>;
+			interrupts = <55 IRQ_TYPE_EDGE_RISING>;
 			linux,code = <18>; // e
 		};
 		clean {
 			label = "clean";
 			interrupt-parent = <&gpio0>;
-			interrupts = <57 IRQ_TYPE_LEVEL_LOW>;
+			interrupts = <54 IRQ_TYPE_EDGE_RISING>;
 			linux,code = <46>; // c
 		};
 	};

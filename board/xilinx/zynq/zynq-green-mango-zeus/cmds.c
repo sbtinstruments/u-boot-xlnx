@@ -9,6 +9,7 @@
  */
 #include <common.h>
 #include <errno.h>
+#include <asm/gpio.h>
 #include <linux/io.h>
 
 #include "mipi_display.h"
@@ -249,8 +250,112 @@ static int do_zeus_display(cmd_tbl_t *cmdtp, int flag, int argc,
 	return CMD_RET_SUCCESS;
 }
 
+/*
+ * Lock-in Amplifier
+ *
+ * Based on drivers/char/sbt_lockamp from the Linux repo
+ */
+
+/* GPIO-based regulators */
+#define REG_OSC_125MHZ_GPIO		60
+#define REG_12V_AND_5W_GPIO		61
+/* lia_gpio (AXI GPIO v2.0) */
+#define LIA_RESET_GPIO_BASE		(volatile void __iomem *)0x41220000
+/* custom lock-in amplifier module */
+#define LOCKAMP_BASE			(volatile void __iomem *)0x43c00000
+#define LOCKAMP_REG_VERSION		0x00
+#define LOCKAMP_REG_BUF_FILL	0x04
+#define LOCKAMP_REG_BUF_DATA	0x08
+
+struct site_sample {
+	u32 hf_re, hf_im, lf_re, lf_im;
+};
+
+struct sample {
+	struct site_sample sites[2];
+};
+
+static u32 lockamp_fifo_fill(void)
+{
+	return ioread32(LOCKAMP_BASE + LOCKAMP_REG_BUF_FILL) / 8;
+}
+
+static u32 lockamp_fifo_pop(void)
+{
+	return ioread32(LOCKAMP_BASE + LOCKAMP_REG_BUF_DATA);
+}
+
+static void lockamp_fifo_pop_sample(struct sample *s)
+{
+	int i;
+	for (i = 0; 2 > i; ++i) {
+		s->sites[i].hf_re = lockamp_fifo_pop();
+		s->sites[i].hf_im = lockamp_fifo_pop();
+		s->sites[i].lf_re = lockamp_fifo_pop();
+		s->sites[i].lf_im = lockamp_fifo_pop();
+	}
+}
+
+static void print_site_sample(struct site_sample *si)
+{
+	printf("%08x %08x %08x %08x\n", si->hf_re, si->hf_im, si->lf_re, si->lf_im);
+}
+
+static void print_sample(struct sample *s)
+{
+	struct site_sample *si;
+	print_site_sample(&s->sites[0]);
+	print_site_sample(&s->sites[1]);
+}
+
+static int do_zeus_lockamp(cmd_tbl_t *cmdtp, int flag, int argc,
+                           char * const argv[])
+{
+	/* Drop the 'lockamp' param */
+	argc--;
+	argv++;
+
+	if (1 > argc) {
+		return CMD_RET_USAGE;
+	}
+
+	if (0 == strcmp(argv[0], "init")) {
+		/* Enable 125 MHz oscillator */
+		//gpio_direction_output(REG_OSC_125MHZ_GPIO, 1);
+		/* Enable analogue eletronics */
+		//gpio_direction_output(REG_12V_AND_5W_GPIO, 1);
+		/* Deassert reset GPIO (by setting GPIO_DATA reg to 0) */
+		iowrite32(0, LIA_RESET_GPIO_BASE);
+		/* Display version */
+		u32 version = ioread32(LOCKAMP_BASE + LOCKAMP_REG_VERSION);
+		printf("lockamp HW version: %x\n", version);
+	} else if (0 == strcmp(argv[0], "read")) {
+		struct sample s;
+		lockamp_fifo_pop_sample(&s);
+		print_sample(&s);
+	} else if (0 == strcmp(argv[0], "discard")) {
+		if (2 != argc) {
+			return CMD_RET_USAGE;
+		}
+		u32 count = simple_strtoul(argv[1], NULL, 16);
+		printf("iterations: %d\n", count);
+		struct sample s;
+		for (int i = 0; count > i; ++i) {
+			u32 fill = lockamp_fifo_fill();
+			printf("fill level: %d\n", fill);
+			for (int j = 0; fill > j; ++j) {
+				lockamp_fifo_pop_sample(&s);
+			}
+			udelay(89043);
+		}
+	}
+	return CMD_RET_SUCCESS;
+}
+
+
 static cmd_tbl_t cmd_zeus[] = {
 	U_BOOT_CMD_MKENT(display, 7, 1, do_zeus_display, "", ""),
+	U_BOOT_CMD_MKENT(lockamp, 3, 1, do_zeus_lockamp, "", ""),
 };
 
 static int do_zeus(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
@@ -279,5 +384,6 @@ U_BOOT_CMD(
 	"display init\n"
 	"zeus display write.rgb565 address x1 x2 y1 y2\n"
 	"zeus display clear.rgb565 color x1 x2 y1 y2\n"
+	"zeus lockamp ...\n"
 );
 

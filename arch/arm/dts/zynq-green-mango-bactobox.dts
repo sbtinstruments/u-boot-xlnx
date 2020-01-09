@@ -77,22 +77,6 @@
 		};
 	};
 
-	/* HACK: This regulator will be automatically disabled during Linux boot.
-	 * This will pull the GPIO down. In turn, this will enable the TIA, which
-	 * is what we want */
-	reg_tia_a2: regulator-tia-a2 {
-		compatible = "regulator-fixed";
-		regulator-name = "tia-a2";
-		regulator-min-microvolt = <3300000>;
-		regulator-max-microvolt = <3300000>;
-		gpio = <&gpio0 64 0 GPIO_ACTIVE_HIGH>;
-		startup-delay-us = <100000>; // Arbitrary
-		enable-active-high;
-		regulator-state-mem {
-			regulator-off-in-suspend;
-		};
-	};
-
 	gpio-keys {
 		compatible = "gpio-keys";
 		measure {

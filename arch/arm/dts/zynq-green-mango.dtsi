@@ -220,6 +220,7 @@
 				regulator-min-microvolt = <900000>;
 				regulator-max-microvolt = <3600000>;
 				regulator-boot-on;
+				regulator-always-on; /* Work-around to power management issue that causes a phase shift */
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};

@@ -75,6 +75,14 @@ u-boot-default-env.txt:
 ###############################################################################
 ### Housekeeping
 ###############################################################################
+.PHONY: clean
+clean:
+	$(UBOOT_MAKE) clean
+
+.PHONY: mrproper
+mrproper:
+	$(UBOOT_MAKE) mrproper
+
 .PHONY: distclean
 distclean:
 	$(UBOOT_MAKE) distclean

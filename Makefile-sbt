@@ -67,7 +67,7 @@ u-boot-default-env.bin: u-boot-default-env.txt
 	./tools/mkenvimage -s 65536 -o $@ $<
 
 .PHONY: u-boot-default-env.txt
-u-boot-default-env.txt:
+u-boot-default-env.txt: u-boot.elf
 	CROSS_COMPILE=$(CROSS_COMPILE) scripts/get_default_envs.sh > $@
 
 

@@ -7,35 +7,39 @@ UBOOT_MAKE=CROSS_COMPILE=$(CROSS_COMPILE) $(MAKE) -j $(PROCESSORS) \
 
 
 .PHONY: all
-all: u-boot.elf
+all: zeus-u-boot.elf bactobox-u-boot.elf
 
 
 
 ###############################################################################
 ### U-boot ELF file
 ###############################################################################
-u-boot.elf: set-version \
-            .config \
-            common/* \
-            configs/* \
-            include/* \
-            arch/arm/dts/*.dts \
-            arch/arm/dts/*.dtsi
-	$(UBOOT_MAKE)
+# Common dependencies
+zeus-u-boot.elf \
+bactobox-u-boot.elf: set-version \
+                     common/* \
+                     configs/* \
+                     include/* \
+                     arch/arm/dts/*.dts \
+                     arch/arm/dts/*.dtsi
+zeus-u-boot.elf: .zeus-config
+	KCONFIG_CONFIG=.zeus-config $(UBOOT_MAKE)
+	cp -f u-boot.elf $@
+bactobox-u-boot.elf: .bactobox-config
+	KCONFIG_CONFIG=.bactobox-config $(UBOOT_MAKE)
+	cp -f u-boot.elf $@
 
 
 
 ###############################################################################
 ### Defconfig
 ###############################################################################
-.config: TARGET_defined configs/zynq_green_mango_$(TARGET)_defconfig
-	$(UBOOT_MAKE) zynq_green_mango_$(TARGET)_defconfig
-
-.PHONY: TARGET_defined
-TARGET_defined:
-ifndef TARGET
-	$(error "The 'TARGET' environment variable is not set. Set it to 'zeus' or 'bactobox'.")
-endif
+.zeus-config: configs/zynq_green_mango_zeus_defconfig
+	$(UBOOT_MAKE) zynq_green_mango_zeus_defconfig
+	cp -f .config $@
+.bactobox-config: configs/zynq_green_mango_bactobox_defconfig
+	$(UBOOT_MAKE) zynq_green_mango_bactobox_defconfig
+	cp -f .config $@
 
 
 
@@ -63,11 +67,17 @@ endif
 ###############################################################################
 ### U-boot environment
 ###############################################################################
-u-boot-default-env.bin: u-boot-default-env.txt
+zeus-u-boot-default-env.bin: zeus-u-boot-default-env.txt
+bactobox-u-boot-default-env.bin: bactobox-u-boot-default-env.txt
+zeus-u-boot-default-env.bin \
+bactobox-u-boot-default-env.bin:
 	./tools/mkenvimage -s 65536 -o $@ $<
 
-.PHONY: u-boot-default-env.txt
-u-boot-default-env.txt: u-boot.elf
+zeus-u-boot-default-env.txt: zeus-u-boot.elf
+bactobox-u-boot-default-env.txt: bactobox-u-boot.elf
+.PHONY: zeus-u-boot-default-env.txt bactobox-u-bot-default-env.txt
+zeus-u-boot-default-env.txt \
+bactobox-u-boot-default-env.txt:
 	CROSS_COMPILE=$(CROSS_COMPILE) scripts/get_default_envs.sh > $@
 
 
@@ -78,11 +88,14 @@ u-boot-default-env.txt: u-boot.elf
 .PHONY: clean
 clean:
 	$(UBOOT_MAKE) clean
+	rm -rf *.elf .*-config
 
 .PHONY: mrproper
 mrproper:
 	$(UBOOT_MAKE) mrproper
+	rm -rf *.elf .*-config
 
 .PHONY: distclean
 distclean:
 	$(UBOOT_MAKE) distclean
+	rm -rf *.elf .*-config

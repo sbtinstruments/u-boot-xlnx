@@ -1,5 +1,9 @@
-PROCESSORS=$(shell grep -c ^processor /proc/cpuinfo)
-CFLAGS="-O2 -mtune=cortex-a9 -mfpu=neon -mfloat-abi=hard"
+GIT_DESCRIPTION:=$(shell git describe --tags --dirty --always \
+	--match v[0-9][0-9][0-9][0-9]\.[0-9][0-9]\.[0-9]*)
+# Strip leading 'v' from GIT_DESCRIPTION
+VERSION:=$(GIT_DESCRIPTION:v%=%)
+PROCESSORS:=$(shell grep -c ^processor /proc/cpuinfo)
+CFLAGS:="-O2 -mtune=cortex-a9 -mfpu=neon -mfloat-abi=hard"
 CROSS_COMPILE?=arm-linux-gnueabihf-
 UBOOT_MAKE=CROSS_COMPILE=$(CROSS_COMPILE) $(MAKE) -j $(PROCESSORS) \
 	ARCH=arm CFLAGS=$(CFLAGS)
@@ -7,39 +11,86 @@ UBOOT_MAKE=CROSS_COMPILE=$(CROSS_COMPILE) $(MAKE) -j $(PROCESSORS) \
 
 
 .PHONY: all
-all: zeus-u-boot.elf bactobox-u-boot.elf
+all: zeus-u-boot.elf \
+     zeus-u-boot-default-env.bin \
+     bactobox-u-boot.elf \
+     bactobox-u-boot-default-env.bin
 
 
 
 ###############################################################################
 ### U-boot ELF file
 ###############################################################################
-# Common dependencies
+ZEUS_BUILD:=zeus-${VERSION}-build
+BACTOBOX_BUILD:=bactobox-${VERSION}-build
+
+# For development builds
+u-boot.elf: set-version \
+            common/* \
+            configs/* \
+            include/* \
+            arch/arm/dts/*.dts \
+            arch/arm/dts/*.dtsi
+	$(UBOOT_MAKE) configs/zynq_green_mango_${TARGET}_defconfig
+	$(UBOOT_MAKE)
+
+# For production builds
+zeus-u-boot.elf: $(ZEUS_BUILD)/u-boot.elf
+bactobox-u-boot.elf: $(BACTOBOX_BUILD)/u-boot.elf
 zeus-u-boot.elf \
-bactobox-u-boot.elf: set-version \
-                     common/* \
-                     configs/* \
-                     include/* \
-                     arch/arm/dts/*.dts \
-                     arch/arm/dts/*.dtsi
-zeus-u-boot.elf: .zeus-config
-	KCONFIG_CONFIG=.zeus-config $(UBOOT_MAKE)
-	cp -f u-boot.elf $@
-bactobox-u-boot.elf: .bactobox-config
-	KCONFIG_CONFIG=.bactobox-config $(UBOOT_MAKE)
-	cp -f u-boot.elf $@
+bactobox-u-boot.elf:
+	ln -sf $< $@
+
+$(ZEUS_BUILD)/u-boot.elf: $(ZEUS_BUILD)/.config
+$(BACTOBOX_BUILD)/u-boot.elf: $(BACTOBOX_BUILD)/.config
+$(ZEUS_BUILD)/u-boot.elf \
+$(BACTOBOX_BUILD)/u-boot.elf:
+	$(UBOOT_MAKE) -C $(@D)
 
 
 
 ###############################################################################
 ### Defconfig
 ###############################################################################
-.zeus-config: configs/zynq_green_mango_zeus_defconfig
-	$(UBOOT_MAKE) zynq_green_mango_zeus_defconfig
-	cp -f .config $@
-.bactobox-config: configs/zynq_green_mango_bactobox_defconfig
-	$(UBOOT_MAKE) zynq_green_mango_bactobox_defconfig
-	cp -f .config $@
+$(ZEUS_BUILD)/.config: | $(ZEUS_BUILD)
+	$(UBOOT_MAKE) -C $(@D) zynq_green_mango_zeus_defconfig
+$(BACTOBOX_BUILD)/.config: | $(BACTOBOX_BUILD)
+	$(UBOOT_MAKE) -C $(@D) zynq_green_mango_bactobox_defconfig
+
+
+
+###############################################################################
+### U-boot environment
+###############################################################################
+zeus-u-boot-default-env.bin: $(ZEUS_BUILD)/u-boot-default-env.bin
+bactobox-u-boot-default-env.bin: $(BACTOBOX_BUILD)/u-boot-default-env.bin
+zeus-u-boot-default-env.bin \
+bactobox-u-boot-default-env.bin:
+	ln -sf $< $@
+
+$(ZEUS_BUILD)/u-boot-default-env.bin: $(ZEUS_BUILD)/u-boot-default-env.txt
+$(BACTOBOX_BUILD)/u-boot-default-env.bin: $(BACTOBOX_BUILD)/u-boot-default-env.txt
+$(ZEUS_BUILD)/u-boot-default-env.bin \
+$(BACTOBOX_BUILD)/u-boot-default-env.bin:
+	$(@D)/tools/mkenvimage -s 65536 -o $@ $<
+
+$(ZEUS_BUILD)/u-boot-default-env.txt: $(ZEUS_BUILD)/u-boot.elf
+$(BACTOBOX_BUILD)/u-boot-default-env.txt: $(BACTOBOX_BUILD)/u-boot.elf
+.PHONY: $(ZEUS_BUILD)/u-boot-default-env.txt \
+        $(BACTOBOX_BUILD)/u-boot-default-env.txt
+$(ZEUS_BUILD)/u-boot-default-env.txt \
+$(BACTOBOX_BUILD)/u-boot-default-env.txt:
+	CROSS_COMPILE=$(CROSS_COMPILE) $(@D)/scripts/get_default_envs.sh > $@
+
+
+
+###############################################################################
+### Build directory
+###############################################################################
+$(ZEUS_BUILD) \
+$(BACTOBOX_BUILD): set-version
+	mkdir -p $@
+	rsync -av --progress . $@ --exclude "*-build"
 
 
 
@@ -65,37 +116,9 @@ endif
 
 
 ###############################################################################
-### U-boot environment
-###############################################################################
-zeus-u-boot-default-env.bin: zeus-u-boot-default-env.txt
-bactobox-u-boot-default-env.bin: bactobox-u-boot-default-env.txt
-zeus-u-boot-default-env.bin \
-bactobox-u-boot-default-env.bin:
-	./tools/mkenvimage -s 65536 -o $@ $<
-
-zeus-u-boot-default-env.txt: zeus-u-boot.elf
-bactobox-u-boot-default-env.txt: bactobox-u-boot.elf
-.PHONY: zeus-u-boot-default-env.txt bactobox-u-bot-default-env.txt
-zeus-u-boot-default-env.txt \
-bactobox-u-boot-default-env.txt:
-	CROSS_COMPILE=$(CROSS_COMPILE) scripts/get_default_envs.sh > $@
-
-
-
-###############################################################################
 ### Housekeeping
 ###############################################################################
-.PHONY: clean
-clean:
-	$(UBOOT_MAKE) clean
-	rm -rf *.elf .*-config
-
-.PHONY: mrproper
-mrproper:
-	$(UBOOT_MAKE) mrproper
-	rm -rf *.elf .*-config
-
-.PHONY: distclean
-distclean:
-	$(UBOOT_MAKE) distclean
-	rm -rf *.elf .*-config
+.PHONY: clean mrproper distclean
+clean mrproper distclean:
+	$(UBOOT_MAKE) $@
+	rm -rf *.elf .*-config *.bin *-env.txt *-build

@@ -98,4 +98,4 @@ GTAGS
 /include/configs/zynq_green_mango.h
 
 # SBT
-*-u-boot-default-env.txt
+*-build/

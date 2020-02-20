@@ -88,7 +88,10 @@ $(BACTOBOX_BUILD)/u-boot-default-env.txt:
 $(ZEUS_BUILD) \
 $(BACTOBOX_BUILD): set-version
 	mkdir -p $@
-	rsync -av --progress . $@ --exclude "*-build"
+	rsync -av --progress . $@ \
+		--exclude "*-build" \
+		--exclude "*.bin" \
+		--exclude "*.elf"
 
 
 

@@ -54,44 +54,37 @@
 		compatible = "gpio-keys";
 		left {
 			label = "left";
-			interrupt-parent = <&gpio0>;
-			interrupts = <62 IRQ_TYPE_EDGE_FALLING>;
+			gpios = <&gpio0 62 GPIO_ACTIVE_LOW>;
 			linux,code = <105>;
 		};
 		ok {
 			label = "ok";
-			interrupt-parent = <&gpio0>;
-			interrupts = <54 IRQ_TYPE_EDGE_FALLING>;
+			gpios = <&gpio0 54 GPIO_ACTIVE_LOW>;
 			linux,code = <28>; // enter
 		};
 		up {
 			label = "up";
-			interrupt-parent = <&gpio0>;
-			interrupts = <55 IRQ_TYPE_EDGE_FALLING>;
+			gpios = <&gpio0 55 GPIO_ACTIVE_LOW>;
 			linux,code = <103>;
 		};
 		right {
 			label = "right";
-			interrupt-parent = <&gpio0>;
-			interrupts = <56 IRQ_TYPE_EDGE_FALLING>;
+			gpios = <&gpio0 56 GPIO_ACTIVE_LOW>;
 			linux,code = <106>;
 		};
 		down {
 			label = "down";
-			interrupt-parent = <&gpio0>;
-			interrupts = <57 IRQ_TYPE_EDGE_FALLING>;
+			gpios = <&gpio0 57 GPIO_ACTIVE_LOW>;
 			linux,code = <108>;
 		};
 		swab1 {
 			label = "swab1";
-			interrupt-parent = <&gpio0>;
-			interrupts = <58 IRQ_TYPE_EDGE_FALLING>;
+			gpios = <&gpio0 58 GPIO_ACTIVE_LOW>;
 			linux,code = <2>; // 1
 		};
 		swab2 {
 			label = "swab2";
-			interrupt-parent = <&gpio0>;
-			interrupts = <59 IRQ_TYPE_EDGE_FALLING>;
+			gpios = <&gpio0 59 GPIO_ACTIVE_LOW>;
 			linux,code = <3>; // 2
 		};
 	};

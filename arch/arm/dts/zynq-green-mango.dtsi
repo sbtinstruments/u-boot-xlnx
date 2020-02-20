@@ -309,7 +309,7 @@
 		regulator-name = "12v-and-5v-sw";
 		regulator-min-microvolt = <12000000>;
 		regulator-max-microvolt = <12000000>;
-		gpio = <&gpio0 60 0 GPIO_ACTIVE_HIGH>;
+		gpio = <&gpio0 60 GPIO_ACTIVE_HIGH>;
 		startup-delay-us = <100000>; // Arbitrary
 		enable-active-high;
 		regulator-state-mem {
@@ -322,7 +322,7 @@
 		regulator-name = "osc-vcc-2v5";
 		regulator-min-microvolt = <2500000>;
 		regulator-max-microvolt = <2500000>;
-		gpio = <&gpio0 61 0 GPIO_ACTIVE_HIGH>;
+		gpio = <&gpio0 61 GPIO_ACTIVE_HIGH>;
 		startup-delay-us = <100000>; // Arbitrary
 		enable-active-high;
 		/* This regulator powers the 125 MHz oscillator that is used for
@@ -639,7 +639,7 @@
 		regulator-name = "tia-a2";
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
-		gpio = <&gpio0 64 0 GPIO_ACTIVE_HIGH>;
+		gpio = <&gpio0 64 GPIO_ACTIVE_HIGH>;
 		startup-delay-us = <100000>; // Arbitrary
 		enable-active-high;
 		regulator-state-mem {

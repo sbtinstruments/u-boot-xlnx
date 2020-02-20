@@ -86,6 +86,10 @@
 			label = "swab2";
 			gpios = <&gpio0 59 GPIO_ACTIVE_LOW>;
 			linux,code = <3>; // 2
+			/* TODO: Use the correct input type (i.e., switch and not key). We
+			 * don't do this right now, since it is easier to test for key
+			 * events in the current distro. */
+			// linux,input-type = <EV_SW>;
 		};
 	};
 };

@@ -76,8 +76,6 @@ $(BACTOBOX_BUILD)/u-boot-default-env.bin:
 
 $(ZEUS_BUILD)/u-boot-default-env.txt: $(ZEUS_BUILD)/u-boot.elf
 $(BACTOBOX_BUILD)/u-boot-default-env.txt: $(BACTOBOX_BUILD)/u-boot.elf
-.PHONY: $(ZEUS_BUILD)/u-boot-default-env.txt \
-        $(BACTOBOX_BUILD)/u-boot-default-env.txt
 $(ZEUS_BUILD)/u-boot-default-env.txt \
 $(BACTOBOX_BUILD)/u-boot-default-env.txt:
 	CROSS_COMPILE=$(CROSS_COMPILE) $(@D)/scripts/get_default_envs.sh > $@

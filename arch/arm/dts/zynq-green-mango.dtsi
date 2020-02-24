@@ -299,7 +299,7 @@
 	gpio-mask-low = <0x5600>;
 	/* Note that the GPIO at HW index 0 (KeySwitch 1) maps to the
 	 * Linux index 945. This is counter-intuitive since the Linux
-	 * indices starts at 892 (so one would assume that HW index 0
+	 * indices start at 892 (so one would assume that HW index 0
 	 * mapped to Linux index 892).
 	 */
 };

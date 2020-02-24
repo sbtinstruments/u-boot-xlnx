@@ -289,9 +289,19 @@
 };
 
 &gpio0 {
+	/* Note that the following entries are not currently in use by the
+	 * official Xilinx Linux driver (gpio-zynq.c). The Xilinx
+	 * documentation, however, recommends to add these entries.
+	 * I guess that these entries may be supported in a future release.
+	 */
 	emio-gpio-width = <11>;
 	gpio-mask-high = <0x0>;
 	gpio-mask-low = <0x5600>;
+	/* Note that the GPIO at HW index 0 (KeySwitch 1) maps to the
+	 * Linux index 945. This is counter-intuitive since the Linux
+	 * indices starts at 892 (so one would assume that HW index 0
+	 * mapped to Linux index 892).
+	 */
 };
 
 &i2c0 {

@@ -3,6 +3,7 @@
  *	Copyright (C) 2019 Frederik Peter Aalund <fpa@sbtinstruments.com>
  */
 /dts-v1/;
+#include <dt-bindings/input/linux-event-codes.h>
 #include "zynq-green-mango.dtsi"
 
 / {
@@ -57,41 +58,28 @@
 		left {
 			label = "left";
 			gpios = <&gpio0 62 GPIO_ACTIVE_LOW>;
-			linux,code = <105>;
+			linux,code = <KEY_BACKSPACE>;
 		};
 		ok {
 			label = "ok";
 			gpios = <&gpio0 54 GPIO_ACTIVE_LOW>;
-			linux,code = <28>; // enter
+			linux,code = <KEY_ENTER>;
 		};
 		up {
 			label = "up";
 			gpios = <&gpio0 55 GPIO_ACTIVE_LOW>;
-			linux,code = <103>;
-		};
-		right {
-			label = "right";
-			gpios = <&gpio0 56 GPIO_ACTIVE_LOW>;
-			linux,code = <106>;
+			linux,code = <KEY_UP>;
 		};
 		down {
 			label = "down";
 			gpios = <&gpio0 57 GPIO_ACTIVE_LOW>;
-			linux,code = <108>;
+			linux,code = <KEY_DOWN>;
 		};
 		swab1 {
-			label = "swab1";
+			label = "swab";
 			gpios = <&gpio0 58 GPIO_ACTIVE_LOW>;
-			linux,code = <2>; // 1
-		};
-		swab2 {
-			label = "swab2";
-			gpios = <&gpio0 59 GPIO_ACTIVE_LOW>;
-			linux,code = <3>; // 2
-			/* TODO: Use the correct input type (i.e., switch and not key). We
-			 * don't do this right now, since it is easier to test for key
-			 * events in the current distro. */
-			// linux,input-type = <EV_SW>;
+			linux,code = <0x0f>;  // SW_PEN_INSERTED
+			linux,input-type = <EV_SW>;
 		};
 	};
 };

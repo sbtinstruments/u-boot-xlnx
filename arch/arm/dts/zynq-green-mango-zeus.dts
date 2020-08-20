@@ -48,7 +48,8 @@
 		// backlight = <&backlight>;
 		// Init is done by u-boot. Additionally, this allows the splash screen
 		// to linger until the UI is loaded.
-		skip-panel-init;
+		linux,skip-reset;
+		linux,skip-clear;
 	};
 
 	gpio-keys {

@@ -96,8 +96,14 @@ struct video_priv {
 	u8 bg_col_idx;
 };
 
-/* Placeholder - there are no video operations at present */
 struct video_ops {
+	/**
+	 * copy_fb_to_hw() - Copy the current frame buffer to the hardware
+	 *
+	 * @dev:	Video device
+	 * @return 0 if OK, -ve on error
+	 */
+	int (*copy_fb_to_hw)(struct udevice *dev);
 };
 
 #define video_get_ops(dev)        ((struct video_ops *)(dev)->driver->ops)

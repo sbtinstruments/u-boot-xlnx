@@ -147,6 +147,8 @@ void video_set_default_colors(struct udevice *dev, bool invert)
 /* Flush video activity to the caches */
 void video_sync(struct udevice *vid, bool force)
 {
+	int ret;
+	struct video_ops *ops = video_get_ops(vid);
 	/*
 	 * flush_dcache_range() is declared in common.h but it seems that some
 	 * architectures do not actually implement it. Is there a way to find
@@ -169,6 +171,18 @@ void video_sync(struct udevice *vid, bool force)
 		last_sync = get_timer(0);
 	}
 #endif
+	/*
+	 * Some devices have their own framebuffer memory that is not
+	 * shared directly with the CPU. For said devices, we need to
+	 * copy U-boot's framebuffer (priv->fb) to the device's own
+	 * framebuffer memory. E.g., via SPI.
+	 */
+	if (ops->copy_fb_to_hw) {
+		ret = ops->copy_fb_to_hw(vid);
+		if (ret) {
+			dev_err(vid, "Could not copy frame buffer to hardware: %d\n", ret);
+		}
+	}
 }
 
 void video_sync_all(void)

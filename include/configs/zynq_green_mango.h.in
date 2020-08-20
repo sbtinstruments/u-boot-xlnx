@@ -14,6 +14,11 @@
 
 #define CONFIG_TFTP_PORT
 
+/* Video */
+#ifdef CONFIG_DM_VIDEO
+#define CONFIG_BMP_16BPP
+#endif
+
 /* Override default environment */
 #undef  CONFIG_EXTRA_ENV_SETTINGS
 #define CONFIG_EXTRA_ENV_SETTINGS	\
@@ -27,6 +32,7 @@
 	"devicetree_image=devicetree.dtb\0"	\
 	"devicetree_load_address=0x2000000\0"	\
 	"splash_load_address=0x2000000\0" \
+	"splash_load_max_size=0x400000\0" \
 	"bitstream_image=system.bit.bin\0"	\
 	"boot_image=BOOT.bin\0"	\
 	"loadbit_addr=0x100000\0"	\
@@ -144,6 +150,9 @@
 		"zeus display clear.rgb565 0xFFFF 0 320 0 480 && " \
 		"load mmc 0:3 ${splash_load_address} /splash.rgb565 80004 && " \
 		"zeus display write.rgb565 ${splash_load_address} 60 260 140 340\0" \
+	"splash_screen_bmp=echo Showing splash screen.. && " \
+		"load mmc 0:3 ${splash_load_address} /splash.bmp ${splash_load_max_size} && " \
+		"bmp display ${splash_load_address} m m\0" \
 	DFU_ALT_INFO \
 	BOOTENV
 

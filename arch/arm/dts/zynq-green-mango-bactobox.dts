@@ -40,7 +40,14 @@
 		xlnx,all-inputs-2 = <0x0>;
 		xlnx,all-outputs = <0x0>;
 		xlnx,all-outputs-2 = <0x0>;
-		xlnx,dout-default = <0x00000000>;
+		/* All lines are low per default except for the display's
+		 * reset line. This way, the display won't reset when Linux
+		 * boots. In turn, this allows the splash screen (set in
+		 * U-boot) to linger.
+		 *
+		 * 0x2 = <&display_gpio 1 0>
+		 */
+		xlnx,dout-default = <0x00000002>;
 		xlnx,dout-default-2 = <0x00000000>;
 		xlnx,gpio-width = <0x2>;
 		xlnx,gpio2-width = <0x20>;
@@ -74,6 +81,9 @@
 			dc-gpios = <&display_gpio 0 0 GPIO_ACTIVE_HIGH>;
 			reset-gpios = <&display_gpio 1 0 GPIO_ACTIVE_HIGH>;
 			rotate = <0>;
+			backlight = <&backlight>;
+			linux,skip-reset;
+			linux,skip-clear;
 		};
 	};
 

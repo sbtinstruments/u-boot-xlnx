@@ -303,7 +303,6 @@ static void print_site_sample(struct site_sample *si)
 
 static void print_sample(struct sample *s)
 {
-	struct site_sample *si;
 	print_site_sample(&s->sites[0]);
 	print_site_sample(&s->sites[1]);
 }
@@ -371,7 +370,7 @@ static int do_zeus(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	if (cp == NULL || argc > cp->maxargs) {
 		return CMD_RET_USAGE;
 	}
-	if (flag == CMD_FLAG_REPEAT && !cp->repeatable) {
+	if (flag == CMD_FLAG_REPEAT && !cmd_is_repeatable(cp)) {
 		return CMD_RET_SUCCESS;
 	}
 

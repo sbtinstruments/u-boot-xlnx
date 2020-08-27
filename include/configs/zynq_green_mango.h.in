@@ -129,15 +129,15 @@
 		"bootm ${kernel_load_address} ${ramdisk_load_address} ${devicetree_load_address}\0" \
 	"dualcopy_mmcboot=echo Determining active system partition && " \
 		"if test \"${active_system}\" -eq \"0\"; then " \
-			"set determined_active_system 0; " \
+			"setenv determined_active_system 0; " \
 			"setenv active_partition 1; " \
 		"elif test \"${active_system}\" -eq \"1\"; then " \
-			"set determined_active_system 1; " \
+			"setenv determined_active_system 1; " \
 			"setenv active_partition 2; " \
 		"else " \
 			"echo \"Could not determine which system is the active one.\"; " \
 			"echo \"Assuming that system 0 is the active one.\"; " \
-			"set determined_active_system 0; " \
+			"setenv determined_active_system 0; " \
 			"setenv active_partition 1; " \
 		"fi; " \
 		"echo Active system is ${determined_active_system} (MMC partition is ${active_partition}) && " \

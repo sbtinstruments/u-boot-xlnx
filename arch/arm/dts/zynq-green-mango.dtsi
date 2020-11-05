@@ -468,6 +468,7 @@
 			reg = <0x4d>;
 			reference-voltage-microvolt = <3300000>; /* 3.3 V */
 		};
+		
 	};
 	opb350_pwm: timer@42810000 {
 		#pwm-cells = <2>;

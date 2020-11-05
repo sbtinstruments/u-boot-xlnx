@@ -88,6 +88,14 @@
 	};
 
 	i2c2: i2c@41600000 {
+		board10219_stm: mega328P@64 {
+			compatible = "sbt,sindri";
+			reg = <0x64>;
+			interrupt-names = "sindri-interrupt";
+			interrupt-parent = <&intc>;
+			interrupts = <0 53 IRQ_TYPE_EDGE_RISING>;
+		};
+
 		board10219_adc0: ads1115@48 {
 			compatible = "ti,ads1115";
 			reg = <0x48>;

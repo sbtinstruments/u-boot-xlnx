@@ -60,27 +60,32 @@
 			label = "left";
 			gpios = <&gpio0 62 GPIO_ACTIVE_LOW>;
 			linux,code = <KEY_BACKSPACE>;
+			wakeup-source;
 		};
 		ok {
 			label = "ok";
 			gpios = <&gpio0 54 GPIO_ACTIVE_LOW>;
 			linux,code = <KEY_ENTER>;
+			wakeup-source;
 		};
 		up {
 			label = "up";
 			gpios = <&gpio0 55 GPIO_ACTIVE_LOW>;
 			linux,code = <KEY_UP>;
+			wakeup-source;
 		};
 		down {
 			label = "down";
 			gpios = <&gpio0 57 GPIO_ACTIVE_LOW>;
 			linux,code = <KEY_DOWN>;
+			wakeup-source;
 		};
 		swab1 {
 			label = "swab";
 			gpios = <&gpio0 58 GPIO_ACTIVE_LOW>;
 			linux,code = <0x0f>;  // SW_PEN_INSERTED
 			linux,input-type = <EV_SW>;
+			wakeup-source;
 		};
 	};
 };

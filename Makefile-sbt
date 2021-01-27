@@ -4,7 +4,7 @@ GIT_DESCRIPTION:=$(shell git describe --tags --dirty --always \
 VERSION:=$(GIT_DESCRIPTION:v%=%)
 PROCESSORS:=$(shell grep -c ^processor /proc/cpuinfo)
 CFLAGS:="-O2 -mtune=cortex-a9 -mfpu=neon -mfloat-abi=hard"
-CROSS_COMPILE?=arm-linux-gnueabihf-
+CROSS_COMPILE?=arm-none-linux-gnueabihf-
 UBOOT_MAKE=CROSS_COMPILE=$(CROSS_COMPILE) $(MAKE) -j $(PROCESSORS) \
 	ARCH=arm CFLAGS=$(CFLAGS)
 

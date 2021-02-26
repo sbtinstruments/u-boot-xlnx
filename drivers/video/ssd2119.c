@@ -155,7 +155,7 @@ static int ssd2119_write_gram(struct udevice *dev, uint16_t *data, size_t len)
 	return 0;
 }
 
-static int ssd2119_copy_fb_to_hw(struct udevice *dev)
+static int ssd2119_video_sync(struct udevice *dev)
 {
 	int ret;
 	struct video_priv *uc_priv = dev_get_uclass_priv(dev);
@@ -343,7 +343,7 @@ static int ssd2119_remove(struct udevice *dev)
 }
 
 static const struct video_ops ssd2119_video_ops = {
-	.copy_fb_to_hw = ssd2119_copy_fb_to_hw,
+	.video_sync = ssd2119_video_sync,
 };
 
 static const struct udevice_id ssd2119_ids[] = {

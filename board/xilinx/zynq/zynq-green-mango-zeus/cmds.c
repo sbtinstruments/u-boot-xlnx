@@ -8,8 +8,10 @@
  * Copyright 2019 Frederik Peter Aalund <fpa@sbtinstruments.com
  */
 #include <common.h>
+#include <command.h>
 #include <errno.h>
 #include <asm/gpio.h>
+#include <linux/delay.h>
 #include <linux/io.h>
 
 #include "mipi_display.h"
@@ -208,7 +210,7 @@ static void ili9488_clear(u16 color, struct clip_rect *clip)
 	iowrite32(0, MIPI_DBI_B_BASE + MIPI_DBI_B_REG_CONTROL);
 }
 
-static int do_zeus_display(cmd_tbl_t *cmdtp, int flag, int argc,
+static int do_zeus_display(struct cmd_tbl *cmdtp, int flag, int argc,
                            char * const argv[])
 {
 	/* Drop the 'display' param */
@@ -307,7 +309,7 @@ static void print_sample(struct sample *s)
 	print_site_sample(&s->sites[1]);
 }
 
-static int do_zeus_lockamp(cmd_tbl_t *cmdtp, int flag, int argc,
+static int do_zeus_lockamp(struct cmd_tbl *cmdtp, int flag, int argc,
                            char * const argv[])
 {
 	/* Drop the 'lockamp' param */
@@ -352,14 +354,14 @@ static int do_zeus_lockamp(cmd_tbl_t *cmdtp, int flag, int argc,
 }
 
 
-static cmd_tbl_t cmd_zeus[] = {
+static struct cmd_tbl cmd_zeus[] = {
 	U_BOOT_CMD_MKENT(display, 7, 1, do_zeus_display, "", ""),
 	U_BOOT_CMD_MKENT(lockamp, 3, 1, do_zeus_lockamp, "", ""),
 };
 
-static int do_zeus(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+static int do_zeus(struct cmd_tbl *cmdtp, int flag, int argc, char * const argv[])
 {
-	cmd_tbl_t *cp;
+	struct cmd_tbl *cp;
 
 	cp = find_cmd_tbl(argv[1], cmd_zeus, ARRAY_SIZE(cmd_zeus));
 

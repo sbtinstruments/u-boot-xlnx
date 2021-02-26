@@ -14,6 +14,7 @@
 #include <errno.h>
 #include <clk.h>
 #include <pwm.h>
+#include <dm/device_compat.h>
 #include <dm/read.h>
 #include <linux/io.h>
 #include <linux/ioport.h>

@@ -7,6 +7,7 @@
 
 #include <common.h>
 #include <dm.h>
+#include <dm/device_compat.h>
 #include <backlight.h>
 #include <fdtdec.h>
 #include <fdt_support.h>
@@ -14,6 +15,8 @@
 #include <spi.h>
 #include <asm/gpio.h>
 
+#include <linux/compat.h>
+#include <linux/delay.h>
 #include <linux/io.h>
 
 #define SSD2119_CMD_WRITE_GRAM			0x22

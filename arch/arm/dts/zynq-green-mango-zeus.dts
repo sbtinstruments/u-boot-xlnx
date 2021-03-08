@@ -43,9 +43,7 @@
 		compatible = "urt,p220md-t";
 		reg = <0x43C10000 0x10000>;
 		reg-names = "mipi-dbi-type-b";
-		// Backlight has been removed from this node since the display turns
-		// it off during init. We want the splash screen to linger.
-		// backlight = <&backlight>;
+		backlight = <&backlight>;
 		// Init is done by u-boot. Additionally, this allows the splash screen
 		// to linger until the UI is loaded.
 		linux,skip-reset;

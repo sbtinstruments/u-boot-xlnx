@@ -25,108 +25,13 @@
 	"firmware_version={FIRMWARE_VERSION}\0"	\
 	"active_system=0\0"	\
 	"ethaddr=00:0a:35:00:01:22\0"	\
-	"kernel_image=uImage\0"	\
-	"kernel_load_address=0x2080000\0" \
-	"ramdisk_image=uramdisk.image.gz\0"	\
-	"ramdisk_load_address=0x4000000\0"	\
-	"devicetree_image=devicetree.dtb\0"	\
-	"devicetree_load_address=0x2000000\0"	\
-	"splash_load_address=0x2000000\0" \
-	"splash_load_max_size=0x400000\0" \
-	"bitstream_image=system.bit.bin\0"	\
-	"boot_image=BOOT.bin\0"	\
-	"loadbit_addr=0x100000\0"	\
-	"loadbootenv_addr=0x2000000\0" \
-	"kernel_size=0x500000\0"	\
-	"devicetree_size=0x20000\0"	\
-	"ramdisk_size=0x5E0000\0"	\
-	"boot_size=0xF00000\0"	\
-	"fdt_high=0x20000000\0"	\
-	"initrd_high=0x20000000\0"	\
-	"bootenv=uEnv.txt\0" \
-	"loadbootenv=load mmc 0 ${loadbootenv_addr} ${bootenv}\0" \
-	"importbootenv=echo Importing environment from SD ...; " \
-		"env import -t ${loadbootenv_addr} $filesize\0" \
-	"sd_uEnvtxt_existence_test=test -e mmc 0 /uEnv.txt\0" \
-	"preboot=if test $modeboot = sdboot && env run sd_uEnvtxt_existence_test; " \
-			"then if env run loadbootenv; " \
-				"then env run importbootenv; " \
-			"fi; " \
-		"fi; \0" \
-	"mmc_loadbit=echo Loading bitstream from SD/MMC/eMMC to RAM.. && " \
-		"mmcinfo && " \
-		"load mmc 0 ${loadbit_addr} ${bitstream_image} && " \
-		"fpga load 0 ${loadbit_addr} ${filesize}\0" \
-	"norboot=echo Copying Linux from NOR flash to RAM... && " \
-		"cp.b 0xE2100000 ${kernel_load_address} ${kernel_size} && " \
-		"cp.b 0xE2600000 ${devicetree_load_address} ${devicetree_size} && " \
-		"echo Copying ramdisk... && " \
-		"cp.b 0xE2620000 ${ramdisk_load_address} ${ramdisk_size} && " \
-		"bootm ${kernel_load_address} ${ramdisk_load_address} ${devicetree_load_address}\0" \
-	"qspiboot=echo Copying Linux from QSPI flash to RAM... && " \
-		"sf probe 0 0 0 && " \
-		"sf read ${kernel_load_address} 0x100000 ${kernel_size} && " \
-		"sf read ${devicetree_load_address} 0x600000 ${devicetree_size} && " \
-		"echo Copying ramdisk... && " \
-		"sf read ${ramdisk_load_address} 0x620000 ${ramdisk_size} && " \
-		"bootm ${kernel_load_address} ${ramdisk_load_address} ${devicetree_load_address}\0" \
-	"uenvboot=" \
-		"if run loadbootenv; then " \
-			"echo Loaded environment from ${bootenv}; " \
-			"run importbootenv; " \
-		"fi; " \
-		"if test -n $uenvcmd; then " \
-			"echo Running uenvcmd ...; " \
-			"run uenvcmd; " \
-		"fi\0" \
-	"sdboot=if mmcinfo; then " \
-			"run uenvboot; " \
-			"echo Copying Linux from SD to RAM... && " \
-			"load mmc 0 ${kernel_load_address} ${kernel_image} && " \
-			"load mmc 0 ${devicetree_load_address} ${devicetree_image} && " \
-			"load mmc 0 ${ramdisk_load_address} ${ramdisk_image} && " \
-			"bootm ${kernel_load_address} ${ramdisk_load_address} ${devicetree_load_address}; " \
-		"fi\0" \
-	"usbboot=if usb start; then " \
-			"run uenvboot; " \
-			"echo Copying Linux from USB to RAM... && " \
-			"load usb 0 ${kernel_load_address} ${kernel_image} && " \
-			"load usb 0 ${devicetree_load_address} ${devicetree_image} && " \
-			"load usb 0 ${ramdisk_load_address} ${ramdisk_image} && " \
-			"bootm ${kernel_load_address} ${ramdisk_load_address} ${devicetree_load_address}; " \
-		"fi\0" \
-	"nandboot=echo Copying Linux from NAND flash to RAM... && " \
-		"nand read ${kernel_load_address} 0x100000 ${kernel_size} && " \
-		"nand read ${devicetree_load_address} 0x600000 ${devicetree_size} && " \
-		"echo Copying ramdisk... && " \
-		"nand read ${ramdisk_load_address} 0x620000 ${ramdisk_size} && " \
-		"bootm ${kernel_load_address} ${ramdisk_load_address} ${devicetree_load_address}\0" \
-	"jtagboot=echo TFTPing Linux to RAM... && " \
-		"tftpboot ${kernel_load_address} ${kernel_image} && " \
-		"tftpboot ${devicetree_load_address} ${devicetree_image} && " \
-		"tftpboot ${ramdisk_load_address} ${ramdisk_image} && " \
-		"bootm ${kernel_load_address} ${ramdisk_load_address} ${devicetree_load_address}\0" \
-	"rsa_norboot=echo Copying Image from NOR flash to RAM... && " \
-		"cp.b 0xE2100000 0x100000 ${boot_size} && " \
-		"zynqrsa 0x100000 && " \
-		"bootm ${kernel_load_address} ${ramdisk_load_address} ${devicetree_load_address}\0" \
-	"rsa_nandboot=echo Copying Image from NAND flash to RAM... && " \
-		"nand read 0x100000 0x0 ${boot_size} && " \
-		"zynqrsa 0x100000 && " \
-		"bootm ${kernel_load_address} ${ramdisk_load_address} ${devicetree_load_address}\0" \
-	"rsa_qspiboot=echo Copying Image from QSPI flash to RAM... && " \
-		"sf probe 0 0 0 && " \
-		"sf read 0x100000 0x0 ${boot_size} && " \
-		"zynqrsa 0x100000 && " \
-		"bootm ${kernel_load_address} ${ramdisk_load_address} ${devicetree_load_address}\0" \
-	"rsa_sdboot=echo Copying Image from SD to RAM... && " \
-		"load mmc 0 0x100000 ${boot_image} && " \
-		"zynqrsa 0x100000 && " \
-		"bootm ${kernel_load_address} ${ramdisk_load_address} ${devicetree_load_address}\0" \
-	"rsa_jtagboot=echo TFTPing Image to RAM... && " \
-		"tftpboot 0x100000 ${boot_image} && " \
-		"zynqrsa 0x100000 && " \
-		"bootm ${kernel_load_address} ${ramdisk_load_address} ${devicetree_load_address}\0" \
+	"bootfile=uImage\0"	\
+	"kernel_addr_r=0x2080000\0" \
+	"ramdiskfile=uramdisk.image.gz\0"	\
+	"ramdisk_addr_r=0x4000000\0"	\
+	"bmp_addr_r=0x2000000\0" \
+	"bmp_maxsize=0x400000\0" \
+	"bootm_size=0x20000000\0"	\
 	"dualcopy_mmcboot=echo Determining active system partition && " \
 		"if test \"${active_system}\" -eq \"0\"; then " \
 			"setenv determined_active_system 0; " \
@@ -142,17 +47,29 @@
 		"fi; " \
 		"echo Active system is ${determined_active_system} (MMC partition is ${active_partition}) && " \
 		"echo Copying Linux from SD to RAM... && " \
-		"load mmc 0:${active_partition} ${kernel_load_address} boot/${kernel_image} && " \
-		"load mmc 0:${active_partition} ${ramdisk_load_address} boot/${ramdisk_image} && " \
-		"bootm ${kernel_load_address} ${ramdisk_load_address} ${fdtcontroladdr}\0" \
-	"splash_screen=echo Showing splash screen.. && " \
-		"zeus display init && " \
-		"zeus display clear.rgb565 0xFFFF 0 320 0 480 && " \
-		"load mmc 0:3 ${splash_load_address} /splash.rgb565 80004 && " \
-		"zeus display write.rgb565 ${splash_load_address} 60 260 140 340\0" \
-	"splash_screen_bmp=echo Showing splash screen.. && " \
-		"load mmc 0:3 ${splash_load_address} /splash.bmp ${splash_load_max_size} && " \
-		"bmp display ${splash_load_address} m m\0" \
+		"load mmc 0:${active_partition} ${kernel_addr_r} boot/${bootfile} && " \
+		"load mmc 0:${active_partition} ${ramdisk_addr_r} boot/${ramdiskfile} && " \
+		"bootm ${kernel_addr_r} ${ramdisk_addr_r} ${fdtcontroladdr}\0" \
+	"splash_screen=echo Showing splash screen... && " \
+		"mango video bg.hex ffffff;" \
+		"mango video clear;" \
+		"mango config load ${bmp_addr_r} /splash.bmp ${bmp_maxsize} && " \
+		"bmp display ${bmp_addr_r} m m\0" \
+	"pmic_early_shutdown=echo Check if we need to shut down early... &&" \
+		"mango pmic wakereason wakereason;" \
+		"echo PMIC woke due to \"${wakereason}\" event;" \
+		"if test \"${wakereason}\" = \"charging\"; then " \
+			"mango video bg.hex 000000;" \
+			"mango video clear;" \
+			"mango resource getaddr battery-charging.bmp bmp_addr_r && " \
+			"bmp display ${bmp_addr_r} m m;" \
+			"sleep 5;" \
+			"mango pmic shutdown;" \
+		"fi\0" \
+	"mango_boot=" \
+		"run pmic_early_shutdown;" \
+		"run splash_screen; " \
+		"run dualcopy_mmcboot\0" \
 	DFU_ALT_INFO \
 	BOOTENV
 

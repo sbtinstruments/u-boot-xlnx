@@ -22,6 +22,7 @@
 		spi0 = &qspi;
 		spi1 = &spi1;
 		mmc0 = &sdhci1;
+		pmic0 = &pmic0;
 	};
 
 	memory@0 {

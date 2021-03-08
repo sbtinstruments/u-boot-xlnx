@@ -37,7 +37,10 @@ obj-$(CONFIG_CMD_ZYNQ_RSA) += bootimg.o
 endif
 
 ifeq ($(hw-platform-y),zynq-green-mango-zeus)
-obj-y += zynq-green-mango-zeus/cmds.o
+obj-y += zynq-green-mango/cmds.o
+endif
+ifeq ($(hw-platform-y),zynq-green-mango-bactobox)
+obj-y += zynq-green-mango/cmds.o
 endif
 
 obj-$(CONFIG_SPL_BUILD) += $(init-objs)

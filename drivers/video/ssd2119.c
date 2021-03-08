@@ -258,23 +258,8 @@ out:
 static int ssd2119_probe(struct udevice *dev)
 {
 	int ret;
-	struct video_uc_platdata *plat = dev_get_uclass_platdata(dev);
 	struct video_priv *uc_priv = dev_get_uclass_priv(dev);
 	struct ssd2119_priv *priv = dev_get_priv(dev);
-	const void *blob = gd->fdt_blob;
-	const int node = dev_of_offset(dev);
-	fdt_addr_t base;
-	fdt_size_t size;
-
-	base = fdtdec_get_addr_size_auto_parent(blob, dev_of_offset(dev->parent),
-			node, "reg", 0, &size, false);
-	if (base == FDT_ADDR_T_NONE) {
-		debug("%s: Failed to decode memory region\n", __func__);
-		return -EINVAL;
-	}
-
-	plat->base = base;
-	plat->size = size;
 
 	uc_priv->xsize = 320;
 	uc_priv->ysize = 240;

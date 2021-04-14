@@ -21,6 +21,7 @@
 #include <power/da9063_pmic.h>
 #include <power/pmic.h>
 #include <video.h>
+#include <video_console.h>
 #include "files.h"
 
 // For register EVENT_A
@@ -137,8 +138,10 @@ static int do_mango_lockamp(struct cmd_tbl *cmdtp, int flag, int argc,
 static int do_mango_video(struct cmd_tbl *cmdtp, int flag, int argc,
                            char * const argv[])
 {
-	struct udevice *dev;
+	struct udevice *dev, *console_dev;
 	struct video_priv *priv;
+	struct vidconsole_priv *console_priv;
+	int ret, x, y;
 
 	/* drop the 'video' param */
 	argc--;
@@ -147,7 +150,7 @@ static int do_mango_video(struct cmd_tbl *cmdtp, int flag, int argc,
 	if (1 > argc) {
 		return CMD_RET_USAGE;
 	}
-	
+
 	/* get video device */
 	if (uclass_first_device_err(UCLASS_VIDEO, &dev)) {
 		return CMD_RET_FAILURE;
@@ -177,6 +180,29 @@ static int do_mango_video(struct cmd_tbl *cmdtp, int flag, int argc,
 		}
 		return CMD_RET_SUCCESS;
 	}
+	/* cursor.px: set the video console cursor in pixel coordinates
+	 *
+	 * Alternatively, use the "setcurs" command that uses column/row coordinates.
+	 */
+	if (0 == strcmp(argv[0], "cursor.px")) {
+		if (3 > argc) {
+			return CMD_RET_USAGE;
+		}
+		x = simple_strtoul(argv[1], NULL, 10);
+		y = simple_strtoul(argv[2], NULL, 10);
+		/* get video console device */
+		ret = uclass_get_device(UCLASS_VIDEO_CONSOLE, 0, &console_dev);
+		if (ret) {
+			log_err("Could not get video console device: %d.\n", ret);
+			return CMD_RET_FAILURE;
+		}
+		console_priv = dev_get_uclass_priv(console_dev);
+		/* set cursor */
+		console_priv->xcur_frac = VID_TO_POS(min_t(short, x, priv->xsize - 1));
+		console_priv->xstart_frac = console_priv->xcur_frac;
+		console_priv->ycur = min_t(short, y, priv->ysize - 1);
+		return CMD_RET_SUCCESS;
+	}
 	return CMD_RET_USAGE;
 }
 
@@ -203,7 +229,7 @@ static int do_mango_pmic(struct cmd_tbl *cmdtp, int flag, int argc,
 	if (1 > argc) {
 		return CMD_RET_USAGE;
 	}
-	
+
 	/* get the PMIC device (there is only one on the Green Mango platform) */
 	ret = pmic_get("da9063@58", &dev);
 	if (ret) {
@@ -319,7 +345,7 @@ static int do_mango_config(struct cmd_tbl *cmdtp, int flag, int argc,
 		return CMD_RET_USAGE;
 	}
 
-	/* load: open and read a file into memory 
+	/* load: open and read a file into memory
 	 *
 	 * Inspired by "do_load" in "fs/fs.c".
 	 *
@@ -375,7 +401,7 @@ static int do_mango_config(struct cmd_tbl *cmdtp, int flag, int argc,
 			puts(")");
 		}
 		puts("\n");
-		
+
 		return CMD_RET_SUCCESS;
 	}
 	return CMD_RET_USAGE;
@@ -386,7 +412,7 @@ static int do_mango_config(struct cmd_tbl *cmdtp, int flag, int argc,
 static struct cmd_tbl cmd_mango[] = {
 	U_BOOT_CMD_MKENT(lockamp, 3, 1, do_mango_lockamp, "", ""),
 #ifndef CONFIG_SPL_BUILD
-	U_BOOT_CMD_MKENT(video, 3, 1, do_mango_video, "", ""),
+	U_BOOT_CMD_MKENT(video, 5, 1, do_mango_video, "", ""),
 	U_BOOT_CMD_MKENT(pmic, 3, 1, do_mango_pmic, "", ""),
 	U_BOOT_CMD_MKENT(config, 7, 1, do_mango_config, "", ""),
 	U_BOOT_CMD_MKENT(resource, 4, 1, do_mango_resource, "", ""),

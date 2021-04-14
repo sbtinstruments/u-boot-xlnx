@@ -32,7 +32,7 @@
 	"bmp_addr_r=0x2000000\0" \
 	"bmp_maxsize=0x400000\0" \
 	"bootm_size=0x20000000\0"	\
-	"dualcopy_mmcboot=echo Determining active system partition && " \
+	"dualcopy_mmcboot=echo Determine active system partition && " \
 		"if test \"${active_system}\" -eq \"0\"; then " \
 			"setenv determined_active_system 0; " \
 			"setenv active_partition 1; " \
@@ -41,25 +41,33 @@
 			"setenv active_partition 2; " \
 		"else " \
 			"echo \"Could not determine which system is the active one.\"; " \
-			"echo \"Assuming that system 0 is the active one.\"; " \
+			"echo \"Assume that system 0 is the active one.\"; " \
 			"setenv determined_active_system 0; " \
 			"setenv active_partition 1; " \
 		"fi; " \
 		"echo Active system is ${determined_active_system} (MMC partition is ${active_partition}) && " \
-		"echo Copying Linux from SD to RAM... && " \
+		"echo Copy Linux from SD to RAM... && " \
 		"load mmc 0:${active_partition} ${kernel_addr_r} boot/${bootfile} && " \
 		"load mmc 0:${active_partition} ${ramdisk_addr_r} boot/${ramdiskfile} && " \
 		"bootm ${kernel_addr_r} ${ramdisk_addr_r} ${fdtcontroladdr}\0" \
-	"splash_screen=echo Showing splash screen... && " \
+	"splash_screen=echo Show splash screen... && " \
 		"mango video bg.hex ffffff;" \
+		"mango video fg.hex 000000;" \
 		"mango video clear;" \
 		"mango config load ${bmp_addr_r} /splash.bmp ${bmp_maxsize} && " \
-		"bmp display ${bmp_addr_r} m m\0" \
+		"bmp display ${bmp_addr_r} m m; " \
+		"fdt addr ${fdtcontroladdr} && " \
+		"fdt get value board / model && " \
+		"if test \"${board}\" = \"SBT Instruments Zeus\"; then " \
+			"mango video cursor.px 53 440; " \
+			"lcdputs \"Do not remove vial\"; " \
+		"fi; \0" \
 	"pmic_early_shutdown=echo Check if we need to shut down early... &&" \
 		"mango pmic wakereason wakereason;" \
 		"echo PMIC woke due to \"${wakereason}\" event;" \
 		"if test \"${wakereason}\" = \"charging\"; then " \
 			"mango video bg.hex 000000;" \
+			"mango video fg.hex ffffff;" \
 			"mango video clear;" \
 			"mango resource getaddr battery-charging.bmp bmp_addr_r && " \
 			"bmp display ${bmp_addr_r} m m;" \

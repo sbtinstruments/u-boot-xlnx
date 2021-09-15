@@ -113,6 +113,11 @@
 			compatible = "ti,tmp102";
 			reg = <0x49>;
 		};
+
+		sensirion_slf3x: slf3s1300f@08 {
+			compatible = "sensirion,slf3s-1300f";
+			reg = <0x08>;
+		};
 	};
 
 	gpio-keys {

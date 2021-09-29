@@ -452,6 +452,7 @@
 	 *		have a kernel API for configuring. Consequently,
 	 *		we can't configure the PWM from another driver.
 	 *	 2. It is faster to develop the driver in user space.
+	 * TODO: Remove the liquid sensor. It is not used anymore.
 	 */
 	i2c2: i2c@41600000 {
 		#address-cells = <1>;
@@ -464,6 +465,7 @@
 		interrupts = <0 31 4>;
 		reg = <0x41600000 0x10000>;
 
+		// TODO: Remove!
 		opb350_adc: mcp3021@4d {
 			compatible = "microchip,mcp3021";
 			reg = <0x4d>;
@@ -471,6 +473,7 @@
 		};
 		
 	};
+	// TODO: Remove!
 	opb350_pwm: timer@42810000 {
 		#pwm-cells = <2>;
 		clock-frequency = <100000000>;

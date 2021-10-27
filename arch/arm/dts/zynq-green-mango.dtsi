@@ -464,32 +464,6 @@
 		interrupt-parent = <&intc>;
 		interrupts = <0 31 4>;
 		reg = <0x41600000 0x10000>;
-
-		// TODO: Remove!
-		opb350_adc: mcp3021@4d {
-			compatible = "microchip,mcp3021";
-			reg = <0x4d>;
-			reference-voltage-microvolt = <3300000>; /* 3.3 V */
-		};
-		
-	};
-	// TODO: Remove!
-	opb350_pwm: timer@42810000 {
-		#pwm-cells = <2>;
-		clock-frequency = <100000000>;
-		clock-names = "s_axi_aclk";
-		clocks = <&clkc 15>;
-		compatible = "xlnx,pwm-xlnx";
-		interrupt-names = "interrupt";
-		interrupt-parent = <&intc>;
-		interrupts = <0 35 4>;
-		reg = <0x42810000 0x10000>;
-		xlnx,count-width = <0x20>;
-		xlnx,gen0-assert = <0x1>;
-		xlnx,gen1-assert = <0x1>;
-		xlnx,one-timer-only = <0x0>;
-		xlnx,trig0-assert = <0x1>;
-		xlnx,trig1-assert = <0x1>;
 	};
 
 	lia_gpio: gpio@41220000 {

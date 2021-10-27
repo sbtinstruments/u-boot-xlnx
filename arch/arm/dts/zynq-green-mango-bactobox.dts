@@ -88,30 +88,11 @@
 	};
 
 	i2c2: i2c@41600000 {
-		board10219_stm: mega328P@64 {
-			compatible = "sbt,sindri";
-			reg = <0x64>;
-			interrupt-names = "sindri-interrupt";
-			interrupt-parent = <&intc>;
-			interrupts = <0 53 IRQ_TYPE_EDGE_RISING>;
-		};
-
-		board10219_adc0: ads1115@48 {
-			compatible = "ti,ads1115";
-			reg = <0x48>;
+		board10219_adc0: mcp3421@68 {
+			compatible = "microchip,mcp3421";
+			reg = <0x68>;
 			#address-cells = <1>;
 			#size-cells = <0>;
-
-			diff0: channel@0 {
-				reg = <0>; // Voltage over AIN0 and AIN1
-				ti,gain = <0>; // +/- 6.144 V
-				ti,datarate = <4>; // 1600 samples per second
-			};
-		};
-
-		board10219_temp0: tmp102@49 {
-			compatible = "ti,tmp102";
-			reg = <0x49>;
 		};
 
 		sensirion_slf3x: slf3s1300f@08 {

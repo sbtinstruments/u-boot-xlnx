@@ -440,20 +440,6 @@
 		ref-voltage = <1700>; /* Must be between 500 and 2500 mV. */
 	};
 
-	/* The liquid sensor (OPB350) consists of:
-	 *	 1. An emitter (a PWM-controlled LED)
-	 *	 2. A receiver (an ADC-controlled phototransistor)
-	 * Note that we only declare nodes for the abovementioned
-	 * devices (PWM and ADC) and not for the liquid sensor
-	 * itself. This is because the liquid sensor driver is
-	 * implemented in a user-space process. The reasons for
-	 * this include:
-	 *	 1. The PWM is a hwmon-device and therefore doesn't
-	 *		have a kernel API for configuring. Consequently,
-	 *		we can't configure the PWM from another driver.
-	 *	 2. It is faster to develop the driver in user space.
-	 * TODO: Remove the liquid sensor. It is not used anymore.
-	 */
 	i2c2: i2c@41600000 {
 		#address-cells = <1>;
 		#size-cells = <0>;

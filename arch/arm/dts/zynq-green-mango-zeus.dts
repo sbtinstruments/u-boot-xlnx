@@ -17,6 +17,10 @@
 	battery0: max17205@36 {
 		compatible = "maxim,max17205";
 		reg = <0x36>;
+		rsense = <10>;  /* milliOhm */
+		ncells = <2>;  /* number of battery cells */
+		cell-balancing-vthres = <10000>;  /* microVolt */
+		charge-full-design = <3500000>;  /* microAmpereHour */
 	};
 };
 

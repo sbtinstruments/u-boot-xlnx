@@ -79,11 +79,11 @@
 				regulator-min-microamp = <500000>;
 				regulator-max-microamp = <2000000>;
 				regulator-boot-on;
-				regulator-always-on;
 				regulator-state-mem {
 					regulator-on-in-suspend;
 				};
 			};
+
 			reg_mt41k256m16: bpro {
 				regulator-name = "reg_mt41k256m16";
 				regulator-min-microvolt = <530000>;
@@ -91,11 +91,11 @@
 				regulator-min-microamp = <500000>;
 				regulator-max-microamp = <2000000>;
 				regulator-boot-on;
-				regulator-always-on;
 				regulator-state-mem {
 					regulator-on-in-suspend;
 				};
 			};
+
 			reg_1v8: bmem {
 				regulator-name = "reg_1v8";
 				regulator-min-microvolt = <800000>;
@@ -103,11 +103,11 @@
 				regulator-min-microamp = <1500000>;
 				regulator-max-microamp = <3000000>;
 				regulator-boot-on;
-				regulator-always-on;
 				regulator-state-mem {
 					regulator-on-in-suspend;
 				};
 			};
+
 			reg_3v3: bio {
 				regulator-name = "reg_3v3";
 				regulator-min-microvolt = <800000>;
@@ -115,117 +115,201 @@
 				regulator-min-microamp = <1500000>;
 				regulator-max-microamp = <3000000>;
 				regulator-boot-on;
-				regulator-always-on;
 				regulator-state-mem {
 					regulator-on-in-suspend;
 				};
 			};
+
 			reg_unused_1v2: bperi {
 				regulator-name = "reg_unused_1v2";
 				regulator-min-microvolt = <800000>;
 				regulator-max-microvolt = <3340000>;
 				regulator-min-microamp = <1500000>;
 				regulator-max-microamp = <3000000>;
-				regulator-boot-on;
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
 			};
+
 			reg_unused_v1: ldo1 {
 				regulator-name = "reg_unused_v1";
 				regulator-min-microvolt = <600000>;
 				regulator-max-microvolt = <1860000>;
-				regulator-boot-on;
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
 			};
+
 			reg_adc_ovdd: ldo2 {
 				regulator-name = "reg_adc_ovdd";
 				regulator-min-microvolt = <600000>;
 				regulator-max-microvolt = <1860000>;
+				/* TODO: Link to ADC instead */
+				/* Measurement on 2023-11-22 by FPA.
+				   Rough power consumption on zeus (hardware 2.0) when
+				   this regulator is on: less than ~0.12 W
+				*/
 				regulator-boot-on;
-				regulator-always-on; /* TODO: Link to ADC instead */
+				regulator-always-on;
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
 			};
+
 			reg_pl_bank33: ldo3 {
 				regulator-name = "reg_pl_bank33";
 				regulator-min-microvolt = <900000>;
 				regulator-max-microvolt = <3440000>;
+				/* Enable in overlay instead when PL is in use */
+				/* Measurement on 2023-11-22 by FPA.
+				   Rough power consumption on zeus (hardware 2.0) when
+				   this regulator is on: less than ~0.12 W
+				*/
 				regulator-boot-on;
-				regulator-always-on; /* Enable in overlay instead when PL is in use */
+				regulator-always-on;
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
 			};
+
 			reg_pl_bank34: ldo4 {
 				regulator-name = "reg_pl_bank34";
 				regulator-min-microvolt = <900000>;
 				regulator-max-microvolt = <3440000>;
+				/* Enable in overlay instead when PL is in use */
+				/* Measurement on 2023-11-22 by FPA.
+				   Rough power consumption on zeus (hardware 2.0) when
+				   this regulator is on: Less than ~0.12 W
+				*/
 				regulator-boot-on;
-				regulator-always-on; /* Enable in overlay instead when PL is in use */
+				regulator-always-on;
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
 			};
+
 			reg_unused_v5: ldo5 {
 				regulator-name = "reg_unused_v5";
 				regulator-min-microvolt = <900000>;
 				regulator-max-microvolt = <3600000>;
-				regulator-boot-on;
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
 			};
+
 			reg_unused_v6a: ldo6 {
 				regulator-name = "reg_unused_v6a";
 				regulator-min-microvolt = <900000>;
 				regulator-max-microvolt = <3600000>;
-				regulator-boot-on;
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
 			};
+
 			reg_lis3dh: ldo7 {
 				regulator-name = "reg_lis3dh";
 				regulator-min-microvolt = <900000>;
 				regulator-max-microvolt = <3600000>;
-				regulator-boot-on;
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
 			};
+
 			reg_unused_v8: ldo8 {
 				regulator-name = "reg_unused_v8";
 				regulator-min-microvolt = <900000>;
 				regulator-max-microvolt = <3600000>;
-				regulator-boot-on;
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
 			};
+
+			/*
+				# reg_zynq_adc0
+
+				This regulator powers the "1V8A" line that goes directly to the
+				"VCCADC_0" pin on the Xilinx Zynq Z-7020. It's power for the
+				so-called "XADC".
+
+				We can the XADC for temperature and voltage readings of the Xilinx
+				Zynq Z-7020 itself.
+				In practice, we do *not* use the XADC. Therefore, we leave this
+				regulator turned off. If you want to use the XADC, then add the
+				following two lines to the device tree node:
+
+					regulator-boot-on;
+					regulator-always-on;
+
+				Note that "zynq-7000.dtsi" defines the XADC as "adc: adc@f8007100".
+				However, the corresponding linux driver does *not* support, e.g.,
+				the "vdd-supply" property as of this writing.
+
+				Note that without power on VCCADC_0, the XADC linux driver always
+				reports zero readings. Example session:
+
+					root@zs2010007:/# cat /sys/bus/iio/devices/iio\:device1/in_temp0_raw
+					0
+
+				Again, this is fine for now, since we do not use the XADC readings
+				for anything.
+
+
+				# Power consumption measurement on 2023-11-22 by FPA.
+
+				Rough power consumption on zeus (hardware 2.0) when
+				this regulator is on: ~0.12 W
+			*/
 			reg_zynq_adc0: ldo9 {
 				regulator-name = "reg_zynq_adc0";
 				regulator-min-microvolt = <950000>;
 				regulator-max-microvolt = <3600000>;
-				regulator-boot-on;
-				regulator-always-on; /* We use it for temperature and voltage readings */
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
 			};
+
+			/*
+				# reg_adc_dac
+
+				This regulator powers the main ADC and DAC of the TIA (tia_adc
+				and tia_dac).
+
+
+				# Phase shift issue
+
+				At some point in time, we saw that runtime power management of
+				this regulator caused a phase shift in the lockamp output data.
+				The current workaround is to use:
+
+				    regulator-always-on;
+
+				This way, we effectively disable power management of this
+				regulator. In turn, we avoid the phase shift.
+
+				TODO: Test if the phase shift is still an issue with the latest
+				hardware (both zeus and bactobox) and latest software.
+
+
+				# Power consumption measurement on 2023-11-22 by FPA.
+
+				Rough power consumption on zeus (hardware 2.0) when
+				this regulator is on: less than ~0.12 W
+
+				Quite surprising since the ADC and DAC are "large" chips. Maybe
+				reg_adc_dac is not enough alone to control the power consumption
+				of the ADC and DAC?
+			*/
 			reg_adc_dac: ldo10 {
 				regulator-name = "reg_adc_dac";
 				regulator-min-microvolt = <900000>;
 				regulator-max-microvolt = <3600000>;
 				regulator-boot-on;
-				regulator-always-on; /* Work-around to power management issue that causes a phase shift */
+				regulator-always-on;
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
 			};
+
 			reg_pl_bank35: ldo11 {
 				regulator-name = "reg_pl_bank35";
 				regulator-min-microvolt = <900000>;
@@ -247,6 +331,7 @@
 		interrupts = <51 IRQ_TYPE_EDGE_RISING>;
 		vdd-supply = <&reg_lis3dh>;
 	};
+
 	temp0: tmp102@48 {
 		compatible = "ti,tmp102";
 		reg = <0x48>;
@@ -314,6 +399,7 @@
 	num_interrupts = <96>;
 };
 
+/* AMBA: Advanced Microcontroller Bus Architecture */
 &amba {
 	reg_12v_and_5v_sw: regulator-12v-and-5v-sw {
 		compatible = "regulator-fixed";
@@ -328,6 +414,31 @@
 		};
 	};
 
+	/*
+		This regulator powers the 125 MHz oscillator that is used for
+		many FPGA-related operations. For now, we choose to simply
+		enable it indefinitely. With time, we can change this and
+		instead use runtime power management features to toggle the
+		regulator on and off as necessary.
+
+
+		# Power consumption measurement on 2023-11-22 by FPA.
+
+		Rough power consumption on zeus (hardware 2.0) when
+		this regulator is on: less than ~1.2 W
+
+		This is quite a significant power consumption! I (FPA) tried
+		to enable runtime power management (remove the "always-on" line)
+		and the system seemingly works. I recall that I put in a lot of
+		effort way back to implement proper runtime power management
+		of the lockamp (and all the associated components). We disabled
+		it due to some phase shift issues.
+
+		TODO: Can we remove the "always-on" line and save ~1.2 W of
+		power when the system is idle? We need to ensure that there are
+		no surprising behaviour (e.g., phase shifts) in the output data
+		of the lockamp.
+	*/
 	reg_osc_vcc_2v5: regulator-osc-vcc-2v5 {
 		compatible = "regulator-fixed";
 		regulator-name = "osc-vcc-2v5";
@@ -336,12 +447,6 @@
 		gpio = <&gpio0 61 GPIO_ACTIVE_HIGH>;
 		startup-delay-us = <100000>; // Arbitrary
 		enable-active-high;
-		/* This regulator powers the 125 MHz oscillator that is used for
-		 * many FPGA-related operations. For now, we choose to simply
-		 * enable it indefinitely. With time, we can change this and
-		 * instead use runtime power management features to toggle the
-		 * regulator on and off as necessary.
-		 */
 		regulator-always-on;
 		regulator-state-mem {
 			regulator-off-in-suspend;

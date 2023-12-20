@@ -55,12 +55,15 @@
 		"mango video clear;" \
 		"mango config load ${bmp_addr_r} /splash.bmp ${bmp_maxsize} && " \
 		"bmp display ${bmp_addr_r} m m; " \
-		"if button swab; then " \
-			"fdt addr ${fdtcontroladdr} && " \
-			"fdt get value board / model && " \
-			"if test \"${board}\" = \"SBT Instruments Zeus\"; then " \
+		"fdt addr ${fdtcontroladdr} && " \
+		"fdt get value board / model && " \
+		"if test \"${board}\" = \"SBT Instruments Zeus\"; then " \
+			"if button swab; then " \
 				"mango video cursor.px 53 440; " \
 				"lcdputs \"Do not remove vial\"; " \
+			"else " \
+				"mango video cursor.px 95 440; " \
+				"lcdputs \"Initializing...\"; " \
 			"fi; " \
 		"fi; \0" \
 	"pmic_early_shutdown=echo Check if we need to shut down early... &&" \

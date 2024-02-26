@@ -25,6 +25,10 @@
 		pmic0 = &pmic0;
 	};
 
+	pmu@f8891000 {
+		interrupt-affinity = <&cpu0>, <&cpu1>;
+	};
+
 	memory@0 {
 		device_type = "memory";
 		reg = <0x0 0x40000000>;
@@ -76,56 +80,94 @@
 				regulator-name = "reg_zynq_ps_pl";
 				regulator-min-microvolt = <300000>;
 				regulator-max-microvolt = <1570000>;
-				regulator-min-microamp = <500000>;
-				regulator-max-microamp = <2000000>;
-				regulator-boot-on;
-				regulator-state-mem {
-					regulator-on-in-suspend;
-				};
+				/* regulator-min-microamp = <500000>; */
+				/* regulator-max-microamp = <2000000>; */
+
+				/* This regulator powers the ZYNQ SoC itself (both CPU and FPGA).
+				 *
+				 * We should never turn it off since that would effectively power off
+			     * the entire system.
+				 *
+				 * The resulting line is called "1V0" in the electronics schematics.
+				 */
+				regulator-always-on;
 			};
 
 			reg_mt41k256m16: bpro {
 				regulator-name = "reg_mt41k256m16";
 				regulator-min-microvolt = <530000>;
 				regulator-max-microvolt = <1800000>;
-				regulator-min-microamp = <500000>;
-				regulator-max-microamp = <2000000>;
-				regulator-boot-on;
-				regulator-state-mem {
-					regulator-on-in-suspend;
-				};
+				/* regulator-min-microamp = <500000>; */
+				/* regulator-max-microamp = <2000000>; */
+
+				/* This regulator powers bothe the DDR memory modules and the corresponding
+				 * lines that goes into the ZYNQ (VCCO_DDR_502).
+				 *
+				 * We should never turn it off since that would effectively power off
+				 * the entire system.
+				 *
+				 * The resulting line is called "1V35" in the electronics schematics.
+				 */
+				regulator-always-on;
 			};
 
 			reg_1v8: bmem {
 				regulator-name = "reg_1v8";
 				regulator-min-microvolt = <800000>;
 				regulator-max-microvolt = <3340000>;
-				regulator-min-microamp = <1500000>;
-				regulator-max-microamp = <3000000>;
-				regulator-boot-on;
-				regulator-state-mem {
-					regulator-on-in-suspend;
-				};
+				/* regulator-min-microamp = <1500000>; */
+				/* regulator-max-microamp = <3000000>; */
+
+				/* This regulator powers the following components:
+				 * 
+				 *  - USB chip (USB3320C) on lines VDDIO and VDD18
+				 *  - 24 MHz clock for the USB3320C
+				 *  - Bank 13 of the ZYNQ
+				 *  - PS Bank 1 of the ZYNQ
+				 *
+				 * There are additional components but we stop the list here.
+				 *
+				 * We should never turn it off since that would effectively power off
+				 * the entire system.
+				 *
+				 * The resulting line is called "1V8" in the electronics schematics.
+				 */
+				regulator-always-on;
 			};
 
 			reg_3v3: bio {
 				regulator-name = "reg_3v3";
 				regulator-min-microvolt = <800000>;
 				regulator-max-microvolt = <3340000>;
-				regulator-min-microamp = <1500000>;
-				regulator-max-microamp = <3000000>;
-				regulator-boot-on;
-				regulator-state-mem {
-					regulator-on-in-suspend;
-				};
+				/* regulator-min-microamp = <1500000>; */
+				/* regulator-max-microamp = <3000000>; */
+
+				/* This regulator powers the following components:
+				 *
+				 *  - The "VCCO_0" line for the ZYNQ
+				 *  - The MTFC8G
+				 *  - The PS Bank 0 of the Zynq
+				 *  - The 33.3333 MHz clock that goes into PS Bank 0 of the ZYNQ
+				 *  - The USB chip (USB3320C) on lines VBAT and VDD33
+				 *
+				 * We should never turn it off since that would effectively power off
+				 * the entire system.
+				 *
+				 * The resulting line is called "3V3" in the electronics schematics.
+				 */
+				regulator-always-on;
 			};
 
 			reg_unused_1v2: bperi {
 				regulator-name = "reg_unused_1v2";
 				regulator-min-microvolt = <800000>;
 				regulator-max-microvolt = <3340000>;
-				regulator-min-microamp = <1500000>;
-				regulator-max-microamp = <3000000>;
+				/* regulator-min-microamp = <1500000>; */
+				/* regulator-max-microamp = <3000000>; */
+
+				/*
+				 * The resulting line is called "1V2" in the electronics schematics.
+				 */
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
@@ -135,6 +177,10 @@
 				regulator-name = "reg_unused_v1";
 				regulator-min-microvolt = <600000>;
 				regulator-max-microvolt = <1860000>;
+
+				/*
+				 * The resulting line is called "V1" in the electronics schematics.
+				 */
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
@@ -144,6 +190,9 @@
 				regulator-name = "reg_adc_ovdd";
 				regulator-min-microvolt = <600000>;
 				regulator-max-microvolt = <1860000>;
+				/*
+				 * The resulting line is called "ADC_OVDD" in the electronics schematics.
+				 */
 				/* TODO: Link to ADC instead */
 				/* Measurement on 2023-11-22 by FPA.
 				   Rough power consumption on zeus (hardware 2.0) when
@@ -160,6 +209,9 @@
 				regulator-name = "reg_pl_bank33";
 				regulator-min-microvolt = <900000>;
 				regulator-max-microvolt = <3440000>;
+				/*
+				 * The resulting line is called "VCCO33" in the electronics schematics.
+				 */
 				/* Enable in overlay instead when PL is in use */
 				/* Measurement on 2023-11-22 by FPA.
 				   Rough power consumption on zeus (hardware 2.0) when
@@ -176,6 +228,9 @@
 				regulator-name = "reg_pl_bank34";
 				regulator-min-microvolt = <900000>;
 				regulator-max-microvolt = <3440000>;
+				/*
+				 * The resulting line is called "VCCO34" in the electronics schematics.
+				 */
 				/* Enable in overlay instead when PL is in use */
 				/* Measurement on 2023-11-22 by FPA.
 				   Rough power consumption on zeus (hardware 2.0) when
@@ -192,6 +247,9 @@
 				regulator-name = "reg_unused_v5";
 				regulator-min-microvolt = <900000>;
 				regulator-max-microvolt = <3600000>;
+				/*
+				 * This regulator is not in use in the electronics schematics.
+				 */
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
@@ -201,6 +259,9 @@
 				regulator-name = "reg_unused_v6a";
 				regulator-min-microvolt = <900000>;
 				regulator-max-microvolt = <3600000>;
+				/*
+				 * The resulting line is called "V6A" in the electronics schematics.
+				 */
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
@@ -210,6 +271,9 @@
 				regulator-name = "reg_lis3dh";
 				regulator-min-microvolt = <900000>;
 				regulator-max-microvolt = <3600000>;
+				/*
+				 * The resulting line is called "2V5" in the electronics schematics.
+				 */
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
@@ -219,6 +283,9 @@
 				regulator-name = "reg_unused_v8";
 				regulator-min-microvolt = <900000>;
 				regulator-max-microvolt = <3600000>;
+				/*
+				 * The resulting line is called "V8" in the electronics schematics.
+				 */
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
@@ -263,6 +330,9 @@
 				regulator-name = "reg_zynq_adc0";
 				regulator-min-microvolt = <950000>;
 				regulator-max-microvolt = <3600000>;
+				/*
+				 * The resulting line is called "1V8A" in the electronics schematics.
+				 */
 				regulator-state-mem {
 					regulator-off-in-suspend;
 				};
@@ -303,6 +373,9 @@
 				regulator-name = "reg_adc_dac";
 				regulator-min-microvolt = <900000>;
 				regulator-max-microvolt = <3600000>;
+				/*
+				 * The resulting line is called V10A" in the electronics schematics.
+				 */
 				regulator-boot-on;
 				regulator-always-on;
 				regulator-state-mem {
@@ -314,6 +387,9 @@
 				regulator-name = "reg_pl_bank35";
 				regulator-min-microvolt = <900000>;
 				regulator-max-microvolt = <3600000>;
+				/*
+				 * The resulting line is called VCCO35" in the electronics schematics.
+				 */
 				regulator-boot-on;
 				regulator-always-on; /* Enable in overlay instead when PL is in use */
 				regulator-state-mem {
@@ -321,15 +397,6 @@
 				};
 			};
 		};
-	};
-	// Consumes less than 0.1 W
-	accel0: lis3dh@18 {
-		compatible = "st,lis3dh-accel";
-		reg = <0x18>;
-		st,drdy-int-pin = <1>;
-		interrupt-parent = <&gpio0>;
-		interrupts = <51 IRQ_TYPE_EDGE_RISING>;
-		vdd-supply = <&reg_lis3dh>;
 	};
 
 	temp0: tmp102@48 {
@@ -401,6 +468,24 @@
 
 /* AMBA: Advanced Microcontroller Bus Architecture */
 &amba {
+	/* TODO: Remove most of this when we rebase on the latest u-boot-xlnx 
+	 * where they reworked the OCM node completely.
+	 *
+	 * Note that for now, the only change we made is to add the "pool"
+	 * property to "ocm-sram@0".
+	 */
+	ocm: sram@fffc0000 {
+		compatible = "mmio-sram";
+		reg = <0xfffc0000 0x10000>;
+		#address-cells = <1>;
+		#size-cells = <1>;
+		ranges = <0 0xfffc0000 0x10000>;
+		ocm-sram@0 {
+			reg = <0x0 0x10000>;
+			pool;
+		};
+	};
+
 	reg_12v_and_5v_sw: regulator-12v-and-5v-sw {
 		compatible = "regulator-fixed";
 		regulator-name = "12v-and-5v-sw";
@@ -462,11 +547,11 @@
 	};
 
 	stepper_gpio: gpio@41200000 {
-		#gpio-cells = <3>;
+		#gpio-cells = <2>;
 		clock-names = "s_axi_aclk";
 		clocks = <&clkc 15>;
 		compatible = "xlnx,axi-gpio-2.0", "xlnx,xps-gpio-1.00.a";
-		gpio-controller ;
+		gpio-controller;
 		reg = <0x41200000 0x10000>;
 		xlnx,all-inputs = <0x0>;
 		xlnx,all-inputs-2 = <0x0>;
@@ -526,16 +611,16 @@
 
 	stepper {
 		compatible = "tmc2100";
-		cfg-gpios = <&stepper_gpio 0 0 GPIO_ACTIVE_HIGH>,
-		            <&stepper_gpio 1 0 GPIO_ACTIVE_HIGH>,
-		            <&stepper_gpio 2 0 GPIO_ACTIVE_HIGH>,
-		            <&stepper_gpio 3 0 GPIO_ACTIVE_HIGH>,
-		            <&stepper_gpio 4 0 GPIO_ACTIVE_HIGH>,
-		            <&stepper_gpio 5 0 GPIO_ACTIVE_HIGH>;
-		cfg6-enn-gpios = <&stepper_gpio 6 0 GPIO_ACTIVE_LOW>;
-		dir-gpios = <&stepper_gpio 7 0 GPIO_ACTIVE_HIGH>;
-		index-gpios = <&stepper_gpio 8 0 GPIO_ACTIVE_HIGH>;
-		error-gpios = <&stepper_gpio 9 0 GPIO_ACTIVE_HIGH>;
+		cfg-gpios = <&stepper_gpio 0 GPIO_ACTIVE_HIGH>,
+		            <&stepper_gpio 1 GPIO_ACTIVE_HIGH>,
+		            <&stepper_gpio 2 GPIO_ACTIVE_HIGH>,
+		            <&stepper_gpio 3 GPIO_ACTIVE_HIGH>,
+		            <&stepper_gpio 4 GPIO_ACTIVE_HIGH>,
+		            <&stepper_gpio 5 GPIO_ACTIVE_HIGH>;
+		cfg6-enn-gpios = <&stepper_gpio 6 GPIO_ACTIVE_LOW>;
+		dir-gpios = <&stepper_gpio 7 GPIO_ACTIVE_HIGH>;
+		index-gpios = <&stepper_gpio 8 GPIO_ACTIVE_HIGH>;
+		error-gpios = <&stepper_gpio 9 GPIO_ACTIVE_HIGH>;
 		/* 1 Hz is just so that Linux doesn't complain on initialization. The
 		 * actual frequency is set by the driver. */
 		pwms = <&stepper_step_pwm 0 1>;
@@ -572,11 +657,11 @@
 	};
 
 	lia_gpio: gpio@41220000 {
-		#gpio-cells = <3>;
+		#gpio-cells = <2>;
 		clock-names = "s_axi_aclk";
 		clocks = <&clkc 15>;
 		compatible = "xlnx,axi-gpio-2.0", "xlnx,xps-gpio-1.00.a";
-		gpio-controller ;
+		gpio-controller;
 		reg = <0x41220000 0x10000>;
 		xlnx,all-inputs = <0x0>;
 		xlnx,all-inputs-2 = <0x0>;
@@ -657,7 +742,7 @@
 		compatible = "sbt,lockamp";
 		reg = <0x43c00000 0x10000>;
 		reg-names = "lockamp-control";
-		reset-gpios = <&lia_gpio 0 0 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&lia_gpio 0 GPIO_ACTIVE_HIGH>;
 		io-channels = <&tia_adc 0>,
 		              <&tia_adc 1>,
 		              <&tia_dac 0>,

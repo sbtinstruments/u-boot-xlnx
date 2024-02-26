@@ -30,7 +30,7 @@
 	};
 
 	display_gpio: gpio@41210000 {
-		#gpio-cells = <3>;
+		#gpio-cells = <2>;
 		clock-names = "s_axi_aclk";
 		clocks = <&clkc 15>;
 		compatible = "xlnx,axi-gpio-2.0", "xlnx,xps-gpio-1.00.a";
@@ -78,8 +78,8 @@
 			reg = <0>;
 			spi-max-frequency = <50000000>;
 			buswidth = <8>;
-			dc-gpios = <&display_gpio 0 0 GPIO_ACTIVE_HIGH>;
-			reset-gpios = <&display_gpio 1 0 GPIO_ACTIVE_HIGH>;
+			dc-gpios = <&display_gpio 0 GPIO_ACTIVE_HIGH>;
+			reset-gpios = <&display_gpio 1 GPIO_ACTIVE_HIGH>;
 			rotate = <0>;
 			backlight = <&backlight>;
 			linux,skip-reset;

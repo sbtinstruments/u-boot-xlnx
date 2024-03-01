@@ -54,6 +54,18 @@
 
 &i2c0 {
 	pmic0: da9063@58 {
+		/* The "interrupt" part may look a little unfamiliar.
+		 * It works this way:
+		 *
+		 *  - DA9063 has a single interrupt line (nIRQ)
+		 *  - nIRQ goes from DA9063 to the ZYNQ SoC's GPIO (gpio0)
+		 *  - DA9063 has several "event" registers (EVENT_A through EVENT_D)
+		 *    that describes what the nIRQ signal is about
+		 *  - The ZYNQ SoC accesses the event registers over I2C
+		 *
+		 * This way, DA9063 can use a *single* line to convey several
+		 * kinds of interrupts.
+		 */
 		compatible = "dlg,da9063";
 		reg = <0x58>;
 		interrupt-parent = <&gpio0>;

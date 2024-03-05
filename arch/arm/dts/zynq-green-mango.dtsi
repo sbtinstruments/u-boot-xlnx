@@ -81,6 +81,16 @@
 		};
 		wdt {
 			compatible = "dlg,da9063-watchdog";
+			/* On Green Mango, suspend-to-RAM does *not* bring
+			 * the DA9063 chip into "POWERDOWN" mode. Therefore,
+			 * the WATCHDOG_PD bit (of the CONTROL_B register)
+			 * does not have any effect. In turn, we need to "manually"
+			 * disable the watchdog during suspend. That is, disable
+			 * the watchdog timer on suspend-to-RAM and enable the
+			 * watchdog timer again on system resume. The
+			 * "dlg,use-sw-pm" flag does just that.
+			 */
+			dlg,use-sw-pm;
 		};
 		gpio {
 			compatible = "dlg,da9063-gpio";

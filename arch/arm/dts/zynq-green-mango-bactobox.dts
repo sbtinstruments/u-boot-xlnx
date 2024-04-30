@@ -99,6 +99,11 @@
 			compatible = "sensirion,slf3s-1300f";
 			reg = <0x08>;
 		};
+		
+		theleecompany_spm: spm@25 {
+			compatible = "theleecompany,spm";
+			reg = <0x25>;
+		};
 	};
 
 	gpio-keys {

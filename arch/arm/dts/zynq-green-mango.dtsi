@@ -778,9 +778,9 @@
 		dma-names = "rx";
 	};
 
-	/* The lockamp's sample stream (S2MM only).
-	 * PLACEHOLDER: address, IRQ, clocks and sg-length-width until
-	 * sbt/drupe#40 records the block design's values. */
+	/* The lockamp's sample stream (S2MM only, scatter-gather). Address
+	 * and IRQ (IRQ_F2P[10], GIC ID 86) as planned on sbt/drupe#40.
+	 * PLACEHOLDER: sg-length-width until sbt/drupe#40 confirms it. */
 	lockamp_dma: dma@40400000 {
 		#dma-cells = <1>;
 		compatible = "xlnx,axi-dma-1.00.a";
@@ -794,7 +794,7 @@
 			compatible = "xlnx,axi-dma-s2mm-channel";
 			dma-channels = <1>;
 			interrupt-parent = <&intc>;
-			interrupts = <0 35 4>;
+			interrupts = <0 54 4>;
 			xlnx,datawidth = <0x20>;
 		};
 	};

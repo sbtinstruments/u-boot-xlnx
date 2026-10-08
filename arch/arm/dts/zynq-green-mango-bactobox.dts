@@ -101,6 +101,34 @@
 		};
 	};
 
+	/* The PCB buzzer (BZ1, CUI CMT-1203, 4 kHz resonant) on net Buzzer_PWM,
+	 * driven by the FPGA image's Buzzer_Timer in PWM mode (sbt/drupe#24).
+	 */
+	buzzer_pwm: timer@42840000 {
+		#pwm-cells = <2>;
+		clock-frequency = <100000000>;
+		clock-names = "s_axi_aclk";
+		clocks = <&clkc 15>;
+		compatible = "xlnx,pwm-xlnx";
+		reg = <0x42840000 0x10000>;
+		xlnx,count-width = <0x20>;
+		xlnx,gen0-assert = <0x1>;
+		xlnx,gen1-assert = <0x1>;
+		xlnx,one-timer-only = <0x0>;
+		xlnx,trig0-assert = <0x1>;
+		xlnx,trig1-assert = <0x1>;
+	};
+
+	buzzer {
+		compatible = "pwm-beeper";
+		pwms = <&buzzer_pwm 0 250000>; // 4 kHz
+		beeper-hz = <4000>;
+		/* BZ1 runs off 5V_SW, which the amp supply switch
+		 * (12V+5VSW_EN) turns on. The beeper and the lockamp share it.
+		 */
+		amp-supply = <&reg_12v_and_5v_sw>;
+	};
+
 	gpio-keys {
 		compatible = "gpio-keys";
 		measure {

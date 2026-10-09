@@ -87,6 +87,40 @@
 		};
 	};
 
+	/* The display's pixels, from RAM to the display engine (MM2S only,
+	 * simple mode). IRQ_F2P[11], GIC ID 87 (sbt/drupe#51).
+	 */
+	display_dma: dma@40410000 {
+		#dma-cells = <1>;
+		compatible = "xlnx,axi-dma-1.00.a";
+		reg = <0x40410000 0x10000>;
+		clocks = <&clkc 15>, <&clkc 15>;
+		clock-names = "s_axi_lite_aclk", "m_axi_mm2s_aclk";
+		xlnx,addrwidth = <0x20>;
+		xlnx,sg-length-width = <0x17>;
+
+		dma-channel@40410000 {
+			compatible = "xlnx,axi-dma-mm2s-channel";
+			dma-channels = <1>;
+			interrupt-parent = <&intc>;
+			interrupts = <0 55 4>;
+			xlnx,datawidth = <0x20>;
+		};
+	};
+
+	/* The FPGA image's display engine. While Linux runs, it drives the
+	 * panel's SPI pins in the Quad SPI's place: the commands through its
+	 * registers, the pixels from display_dma (sbt/drupe#51). U-Boot's
+	 * splash still goes through the Quad SPI and the node above.
+	 */
+	display_engine: display@43c20000 {
+		compatible = "sbt,display-engine-1.0";
+		reg = <0x43c20000 0x10000>;
+		dmas = <&display_dma 0>;
+		dma-names = "tx";
+		backlight = <&backlight>;
+	};
+
 	i2c2: i2c@41600000 {
 		board10219_adc0: mcp3421@68 {
 			compatible = "microchip,mcp3421";

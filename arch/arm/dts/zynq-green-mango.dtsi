@@ -774,6 +774,29 @@
 		                   "dac-site0",
 		                   "dac-site1";
 		amp-supply = <&reg_12v_and_5v_sw>;
+		dmas = <&lockamp_dma 1>;
+		dma-names = "rx";
+	};
+
+	/* The lockamp's sample stream (S2MM only, scatter-gather). Address
+	 * and IRQ (IRQ_F2P[10], GIC ID 86) as planned on sbt/drupe#40.
+	 * PLACEHOLDER: sg-length-width until sbt/drupe#40 confirms it. */
+	lockamp_dma: dma@40400000 {
+		#dma-cells = <1>;
+		compatible = "xlnx,axi-dma-1.00.a";
+		reg = <0x40400000 0x10000>;
+		clocks = <&clkc 15>, <&clkc 15>, <&clkc 15>;
+		clock-names = "s_axi_lite_aclk", "m_axi_s2mm_aclk", "m_axi_sg_aclk";
+		xlnx,addrwidth = <0x20>;
+		xlnx,sg-length-width = <0x17>;
+
+		dma-channel@40400030 {
+			compatible = "xlnx,axi-dma-s2mm-channel";
+			dma-channels = <1>;
+			interrupt-parent = <&intc>;
+			interrupts = <0 54 4>;
+			xlnx,datawidth = <0x20>;
+		};
 	};
 
 	flowcell_memory_qspi: axi_quad_spi@41E40000 {

@@ -877,7 +877,7 @@ static int ax88772d_set_phy_power(struct ueth_data *dev, bool on)
  * stops answering control requests, until a USB reset. So read them out
  * first, then stop the receive path.
  */
-static void ax88772d_flush_rx(struct ueth_data *dev)
+static void __maybe_unused ax88772d_flush_rx(struct ueth_data *dev)
 {
 	int i, actual_len;
 
@@ -895,7 +895,6 @@ static void ax88772d_flush_rx(struct ueth_data *dev)
 /* ax88179a_bind: once, at probe */
 static int ax88772d_bind(struct ueth_data *dev)
 {
-	ax88772d_flush_rx(dev);
 	ax88772d_write16(dev, AX_RX_CTL, AX_RX_CTL_STOP);
 	ax88772d_write8(dev, AX88179A_MAC_PATH, 0);
 
@@ -1119,11 +1118,9 @@ static int ax88772d_link_setting(struct ueth_data *dev,
  */
 static void ax88772d_stop(struct ueth_data *dev, struct asix_private *priv)
 {
-	ax88772d_write16(dev, AX_RX_CTL, AX_RX_CTL_STOP);
+	/* ax88179a_stop, as it is: medium mode 0, then the PHY off */
 	ax88772d_write16(dev, AX_MEDIUM_STATUS_MODE, 0);
-	ax88772d_write8(dev, AX88179A_MAC_PATH, 0);
 	ax88772d_set_phy_power(dev, false);
-	priv->phy_good = false;
 }
 
 /* Linux checks the PHY once the link is set up and the MAC paths are open
@@ -1158,7 +1155,12 @@ static int ax88772d_start(struct ueth_data *dev, struct asix_private *priv)
 		 */
 		asix_write_cmd(dev, AX88179_GPHY_CTRL, AX_GPHY_EEE_CTRL, 0, 0,
 			       NULL);
-		if (!fast || priv->phy_good)
+		/*
+		 * TEST: no PHY check. Linux reads it with its receive path
+		 * open and drained; here nothing reads frames during the check,
+		 * so it reads bad and its power cycle wedged the chip.
+		 */
+		if (!fast || priv->phy_good || 1)
 			break;
 		if (!ax88772d_phy_bad(dev, &vstatus, &ctrl_status)) {
 			priv->phy_good = true;

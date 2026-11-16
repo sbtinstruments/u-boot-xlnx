@@ -771,6 +771,9 @@ int ax88179_eth_get_info(struct usb_device *dev, struct ueth_data *ss,
 	#define AX_FW_MODE_179A		0x0001
 #define AX88179A_PHY_POWER			0x31
 	#define AX_PHY_POWER		0x02
+#define AX88179A_INT_AGGRESSIVE			0x32
+#define AX88179_GPHY_CTRL			0x0f
+	#define AX_GPHY_EEE_CTRL	0x01
 #define AX88179A_AUTODETACH			0xc0
 	#define AX88179A_AUTODETACH_DELAY	(5 << 8)
 
@@ -856,6 +859,15 @@ static int ax88772d_set_phy_power(struct ueth_data *dev, bool on)
 
 	ret = asix_write_cmd(dev, AX88179A_PHY_POWER, 0, 0, 1, &value);
 	mdelay(250);
+	/*
+	 * ASIX's driver is built with ENABLE_INT_AGGRESSIVE and sends this
+	 * after every PHY power-on. Without it, the PHY's 100BASE-TX receiver
+	 * comes up in its bad receive state every time: traced on a black
+	 * AX88772D under Linux, with and without it (protohw, 2026-11-16).
+	 */
+	if (on && !ret)
+		ret = asix_write_cmd(dev, AX88179A_INT_AGGRESSIVE, 0x0003, 0, 0,
+				     NULL);
 	return ret;
 }
 
@@ -1096,14 +1108,29 @@ static int ax88772d_link_setting(struct ueth_data *dev,
 	/* Without the paths ready, no frame moves either way */
 	ret |= ax88772d_write8(dev, AX88179A_MAC_PATH,
 			       AX_MAC_RX_PATH_READY | AX_MAC_TX_PATH_READY);
+	/*
+	 * EEE off, as ASIX's driver does after every link setup: it only
+	 * keeps EEE on a 1000BASE-T link, and this chip has none. Missing,
+	 * the PHY stays in its bad receive state too.
+	 */
+	ret |= asix_write_cmd(dev, AX88179_GPHY_CTRL, AX_GPHY_EEE_CTRL, 0, 0,
+			      NULL);
 
 	return ret ? -EIO : 0;
 }
 
+/*
+ * ax88179a_stop: receive off, then the PHY off. With the PHY left up, frames
+ * keep arriving between network commands while nothing reads them, and the
+ * next command found the chip not answering. The next start powers it again.
+ */
 static void ax88772d_stop(struct ueth_data *dev, struct asix_private *priv)
 {
 	ax88772d_write16(dev, AX_RX_CTL, AX_RX_CTL_STOP);
+	ax88772d_write16(dev, AX_MEDIUM_STATUS_MODE, 0);
 	ax88772d_write8(dev, AX88179A_MAC_PATH, 0);
+	ax88772d_set_phy_power(dev, false);
+	priv->phy_good = false;
 }
 
 /* Linux checks the PHY once the link is set up and the MAC paths are open

@@ -951,7 +951,8 @@ static void ax88772d_link_mode(struct ueth_data *dev, bool *fast, bool *full)
  * where about 30 % of frames fail the CRC. Its vendor registers read 0 until
  * the PHY has settled, about 1 to 3 s after link up.
  */
-static bool ax88772d_phy_bad(struct ueth_data *dev)
+static bool ax88772d_phy_bad(struct ueth_data *dev, u16 *vstatus,
+			     u16 *ctrl_status)
 {
 	u16 status = 0, status_1d = 0;
 	int poll;
@@ -964,8 +965,8 @@ static bool ax88772d_phy_bad(struct ueth_data *dev)
 			break;
 		mdelay(1000);
 	}
-	debug("AX88772D PHY check: 0x10=0x%04x 0x1d=0x%04x\n", status,
-	      status_1d);
+	*vstatus = status;
+	*ctrl_status = status_1d;
 	return (status & AX772D_PHY_VSTATUS_BAD) ||
 	       (status_1d & AX772D_PHY_CTRL_STATUS_BAD);
 }
@@ -1026,10 +1027,20 @@ static int ax88772d_link_setting(struct ueth_data *dev,
 	return ret ? -EIO : 0;
 }
 
+static void ax88772d_stop(struct ueth_data *dev)
+{
+	ax88772d_write16(dev, AX_RX_CTL, AX_RX_CTL_STOP);
+	ax88772d_write8(dev, AX88179A_MAC_PATH, 0);
+}
+
+/* Linux checks the PHY once the link is set up and the MAC paths are open
+ * (SBT patch 0004), so this does too.
+ */
 static int ax88772d_start(struct ueth_data *dev, struct asix_private *priv)
 {
+	u16 vstatus, ctrl_status;
 	bool fast, full;
-	int tries;
+	int tries, ret;
 
 	if (ax88772d_hw_init(dev, priv))
 		return -EIO;
@@ -1038,32 +1049,27 @@ static int ax88772d_start(struct ueth_data *dev, struct asix_private *priv)
 		if (asix_wait_link(dev))
 			return -ENETUNREACH;
 		ax88772d_link_mode(dev, &fast, &full);
-		if (!fast || priv->phy_good)
-			break;
-		if (!ax88772d_phy_bad(dev)) {
+		debug("AX88772D link: %s, %s duplex\n", fast ? "100M" : "10M",
+		      full ? "full" : "half");
+		ret = ax88772d_link_setting(dev, priv, fast, full);
+		if (ret || !fast || priv->phy_good)
+			return ret;
+		if (!ax88772d_phy_bad(dev, &vstatus, &ctrl_status)) {
 			priv->phy_good = true;
-			break;
+			return 0;
 		}
 		if (tries == AX772D_PHY_REPOWER_TRIES) {
 			printf("AX88772D: PHY still in its bad receive state; frames may be lost\n");
-			break;
+			return 0;
 		}
-		printf("AX88772D: PHY in its bad receive state, power cycle %d of %d\n",
-		       tries + 1, AX772D_PHY_REPOWER_TRIES);
+		printf("AX88772D: PHY in its bad receive state (0x10 = 0x%04x, 0x1d = 0x%04x), power cycle %d of %d\n",
+		       vstatus, ctrl_status, tries + 1,
+		       AX772D_PHY_REPOWER_TRIES);
+		ax88772d_stop(dev);
 		ax88772d_set_phy_power(dev, false);
 		ax88772d_set_phy_power(dev, true);
 		mdelay(250);
 	}
-	debug("AX88772D link: %s, %s duplex\n", fast ? "100M" : "10M",
-	      full ? "full" : "half");
-
-	return ax88772d_link_setting(dev, priv, fast, full);
-}
-
-static void ax88772d_stop(struct ueth_data *dev)
-{
-	ax88772d_write16(dev, AX_RX_CTL, AX_RX_CTL_STOP);
-	ax88772d_write8(dev, AX88179A_MAC_PATH, 0);
 }
 
 static int ax88772d_send(struct ueth_data *dev, struct asix_private *priv,

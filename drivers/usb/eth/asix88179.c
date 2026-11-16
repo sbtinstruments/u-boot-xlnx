@@ -17,7 +17,6 @@
 #include <memalign.h>
 #include <errno.h>
 #include <asm/unaligned.h>
-#include <env.h>
 
 /* ASIX AX88179 based USB 3.0 Ethernet Devices */
 #define AX88179_PHY_ID				0x03
@@ -217,9 +216,6 @@ struct asix_private {
 	int flags;
 	bool ax88772d;
 	bool phy_good;
-	struct int_queue *int_queue;
-	int int_queue_used;
-	u8 *int_buf;
 	int rx_urb_size;
 	int maxpacketsize;
 };
@@ -828,54 +824,10 @@ int ax88179_eth_get_info(struct usb_device *dev, struct ueth_data *ss,
 
 #define AX772D_RX_URB_SIZE			(16 * 1024)
 
-/*
- * The chip posts a report on its interrupt endpoint at each link change.
- * Linux always has a read pending there; left unread, the chip stops
- * answering control requests after a few link changes, until a USB reset.
- * So keep reads queued in the periodic schedule while the interface is up.
- */
-#define AX772D_INT_QUEUE_LEN			1
-#define AX772D_INT_ELEMENT_SIZE			16
-#define AX772D_INT_INTERVAL			11
-
 /* AX88772D_BULKIN_SIZE in ASIX's driver: its only non-zero rows */
 static const u8 ax88772d_bulkin_100_full_hs[5] = {5, 0xc0, 0x04, 0x06, 0x0f};
 static const u8 ax88772d_bulkin_100_half_hs[5] = {7, 0xc0, 0x04, 0x06, 0x0f};
 static const u8 ax88772d_bulkin_fs[5] = {7, 0x00, 0x00, 0x03, 0x3f};
-
-/* Take the reports the controller has read, and queue more reads */
-static void ax88772d_drain_int(struct ueth_data *dev, struct asix_private *priv)
-{
-	struct usb_device *udev = dev->pusb_dev;
-
-	if (priv->int_queue) {
-		while (poll_int_queue(udev, priv->int_queue))
-			priv->int_queue_used++;
-		if (priv->int_queue_used < AX772D_INT_QUEUE_LEN)
-			return;
-		destroy_int_queue(udev, priv->int_queue);
-		priv->int_queue = NULL;
-	}
-	if (!priv->int_buf)
-		priv->int_buf = memalign(ARCH_DMA_MINALIGN, AX772D_INT_QUEUE_LEN *
-					 AX772D_INT_ELEMENT_SIZE);
-	if (!priv->int_buf)
-		return;
-	priv->int_queue = create_int_queue(udev,
-					   usb_rcvintpipe(udev, dev->ep_int),
-					   AX772D_INT_QUEUE_LEN,
-					   AX772D_INT_ELEMENT_SIZE,
-					   priv->int_buf, AX772D_INT_INTERVAL);
-	priv->int_queue_used = 0;
-}
-
-static void ax88772d_stop_int(struct ueth_data *dev, struct asix_private *priv)
-{
-	if (!priv->int_queue)
-		return;
-	destroy_int_queue(dev->pusb_dev, priv->int_queue);
-	priv->int_queue = NULL;
-}
 
 static int ax88772d_write8(struct ueth_data *dev, u8 reg, u8 value)
 {
@@ -897,15 +849,6 @@ static u16 ax88772d_mdio_read(struct ueth_data *dev, int reg)
 	return le16_to_cpu(le);
 }
 
-static bool ax88772d_phy_powered(struct ueth_data *dev)
-{
-	u8 value = 0;
-
-	if (asix_read_cmd(dev, AX88179A_PHY_POWER, 0, 0, 1, &value))
-		return false;
-	return value & AX_PHY_POWER;
-}
-
 static int ax88772d_set_phy_power(struct ueth_data *dev, bool on)
 {
 	u8 value = on ? AX_PHY_POWER : 0;
@@ -916,14 +859,36 @@ static int ax88772d_set_phy_power(struct ueth_data *dev, bool on)
 	return ret;
 }
 
+/*
+ * The chip powers up with its receive path open. Until something reads its
+ * bulk-in endpoint, frames from the LAN pile up, and once they do the chip
+ * stops answering control requests, until a USB reset. So read them out
+ * first, then stop the receive path.
+ */
+static void ax88772d_flush_rx(struct ueth_data *dev)
+{
+	int i, actual_len;
+
+	for (i = 0; i < 64; i++) {
+		actual_len = 0;
+		if (usb_bulk_msg(dev->pusb_dev,
+				 usb_rcvbulkpipe(dev->pusb_dev, dev->ep_in),
+				 dev->rxbuf, AX772D_RX_URB_SIZE, &actual_len,
+				 USB_BULK_RECV_TIMEOUT) || !actual_len)
+			break;
+	}
+	usb_ether_advance_rxbuf(dev, -1);
+}
+
 /* ax88179a_bind: once, at probe */
 static int ax88772d_bind(struct ueth_data *dev)
 {
-	printf("TEST bind nofw=%d noreload=%d\n", env_get_yesno("ax772d_nofw"), env_get_yesno("ax772d_noreload"));
-	if ((env_get_yesno("ax772d_nofw") != 1 &&
-	     asix_write_cmd(dev, AX_FW_MODE, AX_FW_MODE_179A, 0, 0, NULL)) ||
-	    (env_get_yesno("ax772d_noreload") != 1 &&
-	     asix_write_cmd(dev, AX_RELOAD_FLASH_EFUSE, 0, 0, 0, NULL))) {
+	ax88772d_flush_rx(dev);
+	ax88772d_write16(dev, AX_RX_CTL, AX_RX_CTL_STOP);
+	ax88772d_write8(dev, AX88179A_MAC_PATH, 0);
+
+	if (asix_write_cmd(dev, AX_FW_MODE, AX_FW_MODE_179A, 0, 0, NULL) ||
+	    asix_write_cmd(dev, AX_RELOAD_FLASH_EFUSE, 0, 0, 0, NULL)) {
 		printf("AX88772D: cannot switch it to AX88179A mode\n");
 		return -EIO;
 	}
@@ -939,7 +904,11 @@ static int ax88772d_hw_init(struct ueth_data *dev, struct asix_private *priv)
 	u8 monitor;
 	int ret = 0;
 
-	if (!ax88772d_phy_powered(dev)) {
+	u8 power;
+
+	if (asix_read_cmd(dev, AX88179A_PHY_POWER, 0, 0, 1, &power))
+		return -EIO;
+	if (!(power & AX_PHY_POWER)) {
 		priv->phy_good = false;
 		if (ax88772d_set_phy_power(dev, true))
 			return -EIO;
@@ -1009,19 +978,14 @@ static void ax88772d_link_mode(struct ueth_data *dev, bool *fast, bool *full)
  * where about 30 % of frames fail the CRC. Its vendor registers read 0 until
  * the PHY has settled, about 1 to 3 s after link up.
  */
-static bool ax88772d_phy_bad(struct ueth_data *dev, struct asix_private *priv,
-			     u16 *vstatus, u16 *ctrl_status)
+static bool ax88772d_phy_bad(struct ueth_data *dev, u16 *vstatus,
+			     u16 *ctrl_status)
 {
 	u16 status = 0, status_1d = 0;
-	ulong start = get_timer(0);
 	int poll;
 
-	while (get_timer(start) < AX772D_PHY_CHECK_DELAY_MS) {
-		ax88772d_drain_int(dev, priv);
-		mdelay(TIMEOUT_RESOLUTION);
-	}
+	mdelay(AX772D_PHY_CHECK_DELAY_MS);
 	for (poll = 0; poll <= AX772D_PHY_SETTLE_POLLS; poll++) {
-		ax88772d_drain_int(dev, priv);
 		status = ax88772d_mdio_read(dev, AX772D_PHY_VSTATUS);
 		status_1d = ax88772d_mdio_read(dev, AX772D_PHY_CTRL_STATUS);
 		if (status || status_1d)
@@ -1034,15 +998,25 @@ static bool ax88772d_phy_bad(struct ueth_data *dev, struct asix_private *priv,
 	       (status_1d & AX772D_PHY_CTRL_STATUS_BAD);
 }
 
-/* asix_wait_link, with the interrupt reports drained as it waits */
-static int ax88772d_wait_link(struct ueth_data *dev, struct asix_private *priv)
+/*
+ * asix_wait_link, but it gives up at once when the chip stops answering. It
+ * sometimes does, after link changes, until a USB reset; and each unanswered
+ * request costs EHCI's full control timeout. So say so and fail fast: armada's
+ * recovery then runs `usb reset` and tries again.
+ */
+static int ax88772d_wait_link(struct ueth_data *dev)
 {
 	ulong start = get_timer(0);
 	bool waited = false;
+	__le16 bmsr;
 
 	for (;;) {
-		ax88772d_drain_int(dev, priv);
-		if (ax88772d_mdio_read(dev, MII_BMSR) & BMSR_LSTATUS) {
+		if (asix_read_cmd(dev, AX_ACCESS_PHY, AX88179_PHY_ID, MII_BMSR,
+				  2, &bmsr)) {
+			printf("AX88772D not answering; run 'usb reset'\n");
+			return -EIO;
+		}
+		if (le16_to_cpu(bmsr) & BMSR_LSTATUS) {
 			if (waited)
 				printf("done.\n");
 			return 0;
@@ -1130,7 +1104,6 @@ static void ax88772d_stop(struct ueth_data *dev, struct asix_private *priv)
 {
 	ax88772d_write16(dev, AX_RX_CTL, AX_RX_CTL_STOP);
 	ax88772d_write8(dev, AX88179A_MAC_PATH, 0);
-	ax88772d_stop_int(dev, priv);
 }
 
 /* Linux checks the PHY once the link is set up and the MAC paths are open
@@ -1142,36 +1115,41 @@ static int ax88772d_start(struct ueth_data *dev, struct asix_private *priv)
 	bool fast, full;
 	int tries, ret;
 
-	ax88772d_drain_int(dev, priv);
-	if (ax88772d_hw_init(dev, priv))
+	if (ax88772d_hw_init(dev, priv)) {
+		printf("AX88772D not answering; run 'usb reset'\n");
 		return -EIO;
+	}
 
+	/*
+	 * Check the PHY before the receive path opens, unlike Linux: nothing
+	 * reads the chip's bulk-in endpoint here until the network loop runs.
+	 */
 	for (tries = 0; ; tries++) {
-		if (ax88772d_wait_link(dev, priv))
-			return -ENETUNREACH;
+		ret = ax88772d_wait_link(dev);
+		if (ret)
+			return ret;
 		ax88772d_link_mode(dev, &fast, &full);
 		debug("AX88772D link: %s, %s duplex\n", fast ? "100M" : "10M",
 		      full ? "full" : "half");
-		ret = ax88772d_link_setting(dev, priv, fast, full);
-		if (ret || !fast || priv->phy_good)
-			return ret;
-		if (!ax88772d_phy_bad(dev, priv, &vstatus, &ctrl_status)) {
+		if (!fast || priv->phy_good)
+			break;
+		if (!ax88772d_phy_bad(dev, &vstatus, &ctrl_status)) {
 			priv->phy_good = true;
-			return 0;
+			break;
 		}
 		if (tries == AX772D_PHY_REPOWER_TRIES) {
 			printf("AX88772D: PHY still in its bad receive state; frames may be lost\n");
-			return 0;
+			break;
 		}
 		printf("AX88772D: PHY in its bad receive state (0x10 = 0x%04x, 0x1d = 0x%04x), power cycle %d of %d\n",
 		       vstatus, ctrl_status, tries + 1,
 		       AX772D_PHY_REPOWER_TRIES);
-		ax88772d_write16(dev, AX_RX_CTL, AX_RX_CTL_STOP);
-		ax88772d_write8(dev, AX88179A_MAC_PATH, 0);
 		ax88772d_set_phy_power(dev, false);
 		ax88772d_set_phy_power(dev, true);
 		mdelay(250);
 	}
+
+	return ax88772d_link_setting(dev, priv, fast, full);
 }
 
 static int ax88772d_send(struct ueth_data *dev, struct asix_private *priv,
@@ -1213,7 +1191,7 @@ static int ax88772d_recv(struct ueth_data *dev, struct asix_private *priv,
 			u32 trailer, hdr_off, pkt_cnt;
 			int len, ret;
 
-			ax88772d_drain_int(dev, priv);
+
 			len = usb_ether_get_rx_bytes(dev, &ptr);
 			if (!len) {
 				if (!(flags & ETH_RECV_CHECK_DEVICE))

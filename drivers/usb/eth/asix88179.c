@@ -16,6 +16,7 @@
 #include <malloc.h>
 #include <memalign.h>
 #include <errno.h>
+#include <asm/unaligned.h>
 
 /* ASIX AX88179 based USB 3.0 Ethernet Devices */
 #define AX88179_PHY_ID				0x03
@@ -210,8 +211,11 @@ struct asix_private {
 	unsigned pkt_cnt;
 	uint8_t *pkt_data;
 	uint32_t *pkt_hdr;
+	uint8_t *pkt_end;
 #endif
 	int flags;
+	bool ax88772d;
+	bool phy_good;
 	int rx_urb_size;
 	int maxpacketsize;
 };
@@ -748,10 +752,422 @@ int ax88179_eth_get_info(struct usb_device *dev, struct ueth_data *ss,
 
 #else /* !CONFIG_DM_ETH */
 
+/*
+ * ASIX AX88772D
+ *
+ * It shares USB ID 0b95:1790 with the AX88179, but it is an AX88179A-family
+ * chip, told apart by bcdDevice 0x0300. The AX88179 init above never powers
+ * up its PHY, so the link never comes up. This path follows ASIX's own
+ * driver, ax_usb_nic v4.1.0 (ax88179a_772d.c): firmware mode 179A, the PHY
+ * powered by its own request, the AX88179A register setup, and 8-byte
+ * headers on every frame. Plus SBT's patches 0003 and 0004 to that driver
+ * (meta-sbt-open-source, recipes-kernel/ax-usb-nic): step over a flagged
+ * frame whole, and power-cycle the PHY while it is in its bad receive state.
+ */
+#define AX_BCDDEVICE_AX88772D			0x0300
+
+#define AX_RELOAD_FLASH_EFUSE			0x06
+#define AX_FW_MODE				0x08
+	#define AX_FW_MODE_179A		0x0001
+#define AX88179A_PHY_POWER			0x31
+	#define AX_PHY_POWER		0x02
+#define AX88179A_AUTODETACH			0xc0
+	#define AX88179A_AUTODETACH_DELAY	(5 << 8)
+
+#define AX88179A_BFM_DATA			0x0e
+#define AX88179A_VLAN_ID_CONTROL		0x2b
+#define AX88179A_MAC_BM_INT_MASK		0x41
+#define AX88179A_MAC_BM_RX_DMA_CTL		0x43
+#define AX88179A_MAC_BM_TX_DMA_CTL		0x46
+#define AX88179A_MAC_RX_STATUS_CDC		0x6d
+	#define AX_GMII_CRC_APPEND	0x10
+	#define AX_LSOFC_WCNT_7_ACCESS	0x03
+#define AX88179A_MAC_ARC_CTRL			0x9e
+#define AX88179A_CDC_ECM_CTRL			0xb0
+#define AX88179A_MAC_SWP_CTRL			0xb1
+#define AX88179A_MAC_CDC_DELAY_TX		0xb5
+#define AX88179A_MAC_PATH			0xb7
+	#define AX_MAC_RX_PATH_READY	0x01
+	#define AX_MAC_TX_PATH_READY	0x02
+#define AX88179A_NEW_PAUSE_CTRL			0xb8
+	#define AX_NEW_PAUSE_EN		0x01
+#define AX88179A_MAC_BULK_OUT_CTRL		0xb9
+	#define AX_MAC_EFF_EN		0x02
+#define AX88179A_MAC_RX_DATA_CDC_CNT		0xc0
+#define AX88179A_MAC_TX_HDR_CKSUM		0xcc
+	#define AX_TXHDR_CKSUM_EN	0x01
+
+/* Every frame, both ways, carries an 8-byte header; a bulk-in transfer ends
+ * in an 8-byte trailer: packet count in bits 0-12, header offset in 13-31.
+ */
+#define AX179A_HDR_LEN				8
+#define AX179A_RX_PKT_CNT(t)			((t) & 0x1fff)
+#define AX179A_RX_HDR_OFF(t)			((t) >> 13)
+#define AX179A_RX_OK				(1 << 10)
+#define AX179A_RX_LEN(h)			(((h) >> 16) & 0x7fff)
+#define AX179A_RX_DROP				(1U << 31)
+#define AX179A_TX_LEN_MASK			0x1fffff
+
+/* SBT patch 0004: vendor PHY registers that show the bad receive state */
+#define AX772D_PHY_VSTATUS			0x10
+	#define AX772D_PHY_VSTATUS_BAD	0x0200
+#define AX772D_PHY_CTRL_STATUS			0x1d
+	#define AX772D_PHY_CTRL_STATUS_BAD	0x2000
+#define AX772D_PHY_CHECK_DELAY_MS		3000
+#define AX772D_PHY_SETTLE_POLLS			5
+#define AX772D_PHY_REPOWER_TRIES		8
+
+/* AX88772D_BULKIN_SIZE in ASIX's driver: its only non-zero rows */
+static const u8 ax88772d_bulkin_100_full_hs[5] = {5, 0xc0, 0x04, 0x06, 0x0f};
+static const u8 ax88772d_bulkin_100_half_hs[5] = {7, 0xc0, 0x04, 0x06, 0x0f};
+static const u8 ax88772d_bulkin_fs[5] = {7, 0x00, 0x00, 0x03, 0x3f};
+
+static int ax88772d_write8(struct ueth_data *dev, u8 reg, u8 value)
+{
+	return asix_write_cmd(dev, AX_ACCESS_MAC, reg, 1, 1, &value);
+}
+
+static int ax88772d_write16(struct ueth_data *dev, u8 reg, u16 value)
+{
+	__le16 le = cpu_to_le16(value);
+
+	return asix_write_cmd(dev, AX_ACCESS_MAC, reg, 2, 2, &le);
+}
+
+static u16 ax88772d_mdio_read(struct ueth_data *dev, int reg)
+{
+	__le16 le = 0;
+
+	asix_read_cmd(dev, AX_ACCESS_PHY, AX88179_PHY_ID, reg, 2, &le);
+	return le16_to_cpu(le);
+}
+
+static bool ax88772d_phy_powered(struct ueth_data *dev)
+{
+	u8 value = 0;
+
+	if (asix_read_cmd(dev, AX88179A_PHY_POWER, 0, 0, 1, &value))
+		return false;
+	return value & AX_PHY_POWER;
+}
+
+static int ax88772d_set_phy_power(struct ueth_data *dev, bool on)
+{
+	u8 value = on ? AX_PHY_POWER : 0;
+	int ret;
+
+	ret = asix_write_cmd(dev, AX88179A_PHY_POWER, 0, 0, 1, &value);
+	mdelay(250);
+	return ret;
+}
+
+/* ax88179a_bind: once, at probe */
+static int ax88772d_bind(struct ueth_data *dev)
+{
+	if (asix_write_cmd(dev, AX_FW_MODE, AX_FW_MODE_179A, 0, 0, NULL) ||
+	    asix_write_cmd(dev, AX_RELOAD_FLASH_EFUSE, 0, 0, 0, NULL)) {
+		printf("AX88772D: cannot switch it to AX88179A mode\n");
+		return -EIO;
+	}
+	return 0;
+}
+
+/* ax88179a_hw_init. The PHY is left powered between network commands, so
+ * the next one finds the link up; only a PHY that is off is powered here.
+ */
+static int ax88772d_hw_init(struct ueth_data *dev, struct asix_private *priv)
+{
+	u16 medium;
+	u8 monitor;
+	int ret = 0;
+
+	if (!ax88772d_phy_powered(dev)) {
+		priv->phy_good = false;
+		if (ax88772d_set_phy_power(dev, true))
+			return -EIO;
+		mdelay(250);
+	}
+
+	/* No autodetach: U-Boot keeps the bus up, and Linux sets its own */
+	ret |= asix_write_cmd(dev, AX88179A_AUTODETACH,
+			      AX88179A_AUTODETACH_DELAY, 0, 0, NULL);
+	ret |= ax88772d_write8(dev, AX_TXCOE_CTL, AX_TXCOE_IP | AX_TXCOE_TCP |
+			       AX_TXCOE_UDP | AX_TXCOE_TCPV6 | AX_TXCOE_UDPV6);
+	ret |= ax88772d_write8(dev, AX_RXCOE_CTL, AX_RXCOE_IP | AX_RXCOE_TCP |
+			       AX_RXCOE_UDP | AX_RXCOE_TCPV6 | AX_RXCOE_UDPV6);
+	ret |= ax88772d_write8(dev, AX88179A_MAC_BULK_OUT_CTRL, AX_MAC_EFF_EN);
+	ret |= ax88772d_write16(dev, AX_RX_CTL, AX_RX_CTL_STOP);
+	ret |= ax88772d_write8(dev, AX_PAUSE_WATERLVL_HIGH, 0x04);
+	ret |= ax88772d_write8(dev, AX_PAUSE_WATERLVL_LOW, 0x10);
+	ret |= ax88772d_write8(dev, AX88179A_VLAN_ID_CONTROL, 0);
+	ret |= ax88772d_write8(dev, AX88179A_MAC_BM_INT_MASK, 0xff);
+	ret |= ax88772d_write8(dev, AX88179A_MAC_BM_RX_DMA_CTL, 0);
+	ret |= ax88772d_write8(dev, AX88179A_MAC_BM_TX_DMA_CTL, 0);
+	ret |= ax88772d_write8(dev, AX88179A_MAC_ARC_CTRL, 0);
+	ret |= ax88772d_write8(dev, AX88179A_MAC_SWP_CTRL, 0);
+	ret |= ax88772d_write8(dev, AX88179A_MAC_TX_HDR_CKSUM,
+			       AX_TXHDR_CKSUM_EN);
+	ret |= ax88772d_write8(dev, AX88179A_MAC_PATH, 0);
+
+	ret |= asix_read_cmd(dev, AX_ACCESS_MAC, AX_MONITOR_MOD, 1, 1,
+			     &monitor);
+	monitor = (monitor & 0xe0) | AX_MONITOR_MODE_RWMP;
+	ret |= ax88772d_write8(dev, AX_MONITOR_MOD, monitor);
+
+	ret |= asix_read_cmd(dev, AX_ACCESS_MAC, AX_MEDIUM_STATUS_MODE, 2, 2,
+			     &medium);
+	medium = le16_to_cpu(medium);
+	ret |= ax88772d_write16(dev, AX_MEDIUM_STATUS_MODE,
+				medium & ~AX_MEDIUM_GIGAMODE);
+	ret |= ax88772d_write16(dev, AX_MEDIUM_STATUS_MODE,
+				medium | AX_MEDIUM_GIGAMODE);
+
+	ret |= ax88772d_write8(dev, AX88179A_BFM_DATA, 0);
+	ret |= ax88772d_write8(dev, AX88179A_CDC_ECM_CTRL, 0);
+
+	return ret ? -EIO : 0;
+}
+
+/* The link as autonegotiated, from the standard MII registers: the AX88179's
+ * PHY status register (0x11) means something else on this PHY.
+ */
+static void ax88772d_link_mode(struct ueth_data *dev, bool *fast, bool *full)
+{
+	u16 common = ax88772d_mdio_read(dev, MII_ADVERTISE) &
+		     ax88772d_mdio_read(dev, MII_LPA);
+	u16 bmcr;
+
+	if (common & (LPA_100FULL | LPA_100HALF | LPA_10FULL | LPA_10HALF)) {
+		*fast = common & (LPA_100FULL | LPA_100HALF);
+		*full = common & (*fast ? LPA_100FULL : LPA_10FULL);
+		return;
+	}
+	bmcr = ax88772d_mdio_read(dev, MII_BMCR);
+	*fast = bmcr & BMCR_SPEED100;
+	*full = bmcr & BMCR_FULLDPLX;
+}
+
+/* SBT patch 0004: true while the PHY's 100BASE-TX receiver is in the state
+ * where about 30 % of frames fail the CRC. Its vendor registers read 0 until
+ * the PHY has settled, about 1 to 3 s after link up.
+ */
+static bool ax88772d_phy_bad(struct ueth_data *dev)
+{
+	u16 status = 0, status_1d = 0;
+	int poll;
+
+	mdelay(AX772D_PHY_CHECK_DELAY_MS);
+	for (poll = 0; poll <= AX772D_PHY_SETTLE_POLLS; poll++) {
+		status = ax88772d_mdio_read(dev, AX772D_PHY_VSTATUS);
+		status_1d = ax88772d_mdio_read(dev, AX772D_PHY_CTRL_STATUS);
+		if (status || status_1d)
+			break;
+		mdelay(1000);
+	}
+	debug("AX88772D PHY check: 0x10=0x%04x 0x1d=0x%04x\n", status,
+	      status_1d);
+	return (status & AX772D_PHY_VSTATUS_BAD) ||
+	       (status_1d & AX772D_PHY_CTRL_STATUS_BAD);
+}
+
+/* ax88179a_link_setting: once the link is up */
+static int ax88772d_link_setting(struct ueth_data *dev,
+				 struct asix_private *priv, bool fast,
+				 bool full)
+{
+	u8 status_cdc[3] = {0x78, (AX_LSOFC_WCNT_7_ACCESS << 5) |
+			    AX_GMII_CRC_APPEND, 0};
+	u8 water[2] = {0x10, 0x04};
+	u8 bulkin[5];
+	u16 mode = AX_MEDIUM_RECEIVE_EN | AX_MEDIUM_RXFLOW_CTRLEN |
+		   AX_MEDIUM_TXFLOW_CTRLEN;
+	u8 usb_link = 0;
+	int ret = 0;
+
+	ret |= ax88772d_write16(dev, AX_RX_CTL, AX_RX_CTL_STOP);
+	ret |= ax88772d_write8(dev, AX88179A_MAC_PATH, 0);
+	ret |= ax88772d_write8(dev, AX88179A_MAC_CDC_DELAY_TX, 0xa5);
+	ret |= asix_write_cmd(dev, AX_ACCESS_MAC, AX_PAUSE_WATERLVL_LOW, 2, 2,
+			      water);
+	ret |= ax88772d_write8(dev, AX88179A_NEW_PAUSE_CTRL,
+			       0x28 | AX_NEW_PAUSE_EN);
+	if (!fast) {
+		status_cdc[0] = 0xfa;
+		status_cdc[2] = 0xff;
+	}
+	ret |= asix_write_cmd(dev, AX_ACCESS_MAC, AX88179A_MAC_RX_STATUS_CDC,
+			      3, 3, status_cdc);
+	ret |= ax88772d_write8(dev, AX88179A_MAC_RX_DATA_CDC_CNT,
+			       fast ? 0x40 : 0xfa);
+	ret |= ax88772d_write8(dev, AX88179A_BFM_DATA, 0);
+
+	asix_read_cmd(dev, AX_ACCESS_MAC, PHYSICAL_LINK_STATUS, 1, 1,
+		      &usb_link);
+	if (fast && (usb_link & AX_USB_HS))
+		memcpy(bulkin, full ? ax88772d_bulkin_100_full_hs :
+		       ax88772d_bulkin_100_half_hs, sizeof(bulkin));
+	else
+		memcpy(bulkin, ax88772d_bulkin_fs, sizeof(bulkin));
+	ret |= asix_write_cmd(dev, AX_ACCESS_MAC, AX_RX_BULKIN_QCTRL, 5, 5,
+			      bulkin);
+	/* A bulk-in transfer is at most 2 * size KB, under AX_RX_URB_SIZE */
+	priv->rx_urb_size = AX_RX_URB_SIZE;
+
+	if (full)
+		mode |= AX_MEDIUM_FULL_DUPLEX;
+	ret |= ax88772d_write16(dev, AX_MEDIUM_STATUS_MODE, mode);
+	ret |= ax88772d_write16(dev, AX_RX_CTL, AX_RX_CTL_DROPCRCERR |
+				AX_RX_CTL_START | AX_RX_CTL_AP |
+				AX_RX_CTL_AMALL | AX_RX_CTL_AB);
+	/* Without the paths ready, no frame moves either way */
+	ret |= ax88772d_write8(dev, AX88179A_MAC_PATH,
+			       AX_MAC_RX_PATH_READY | AX_MAC_TX_PATH_READY);
+
+	return ret ? -EIO : 0;
+}
+
+static int ax88772d_start(struct ueth_data *dev, struct asix_private *priv)
+{
+	bool fast, full;
+	int tries;
+
+	if (ax88772d_hw_init(dev, priv))
+		return -EIO;
+
+	for (tries = 0; ; tries++) {
+		if (asix_wait_link(dev))
+			return -ENETUNREACH;
+		ax88772d_link_mode(dev, &fast, &full);
+		if (!fast || priv->phy_good)
+			break;
+		if (!ax88772d_phy_bad(dev)) {
+			priv->phy_good = true;
+			break;
+		}
+		if (tries == AX772D_PHY_REPOWER_TRIES) {
+			printf("AX88772D: PHY still in its bad receive state; frames may be lost\n");
+			break;
+		}
+		printf("AX88772D: PHY in its bad receive state, power cycle %d of %d\n",
+		       tries + 1, AX772D_PHY_REPOWER_TRIES);
+		ax88772d_set_phy_power(dev, false);
+		ax88772d_set_phy_power(dev, true);
+		mdelay(250);
+	}
+	debug("AX88772D link: %s, %s duplex\n", fast ? "100M" : "10M",
+	      full ? "full" : "half");
+
+	return ax88772d_link_setting(dev, priv, fast, full);
+}
+
+static void ax88772d_stop(struct ueth_data *dev)
+{
+	ax88772d_write16(dev, AX_RX_CTL, AX_RX_CTL_STOP);
+	ax88772d_write8(dev, AX88179A_MAC_PATH, 0);
+}
+
+static int ax88772d_send(struct ueth_data *dev, struct asix_private *priv,
+			 void *packet, int length)
+{
+	ALLOC_CACHE_ALIGN_BUFFER(unsigned char, msg, PKTSIZE + AX179A_HDR_LEN);
+	u32 len, checksum;
+	int actual_len;
+
+	if (length > PKTSIZE)
+		return -EMSGSIZE;
+	memcpy(msg + AX179A_HDR_LEN, packet, length);
+	if (length < ETH_ZLEN) {
+		memset(msg + AX179A_HDR_LEN + length, 0, ETH_ZLEN - length);
+		length = ETH_ZLEN;
+	}
+
+	len = length & AX179A_TX_LEN_MASK;
+	checksum = (len + (len >> 8) + ((len >> 16) & 0x1f)) & 0x7f;
+	put_unaligned_le32(len | (checksum << 21), msg);
+	put_unaligned_le32(0, msg + 4);
+
+	return usb_bulk_msg(dev->pusb_dev,
+			    usb_sndbulkpipe(dev->pusb_dev, dev->ep_out),
+			    msg, length + AX179A_HDR_LEN, &actual_len,
+			    USB_BULK_SEND_TIMEOUT);
+}
+
+static int ax88772d_recv(struct ueth_data *dev, struct asix_private *priv,
+			 int flags, uchar **packetp)
+{
+	for (;;) {
+		u32 hdr, pkt_len;
+		uint8_t *data;
+
+		/* No packet left, get a new transfer */
+		if (priv->pkt_cnt == 0) {
+			uint8_t *ptr;
+			u32 trailer, hdr_off, pkt_cnt;
+			int len, ret;
+
+			len = usb_ether_get_rx_bytes(dev, &ptr);
+			if (!len) {
+				if (!(flags & ETH_RECV_CHECK_DEVICE))
+					return -EAGAIN;
+				ret = usb_ether_receive(dev, priv->rx_urb_size);
+				if (ret < 0)
+					return ret;
+				len = usb_ether_get_rx_bytes(dev, &ptr);
+			}
+			if (len < AX179A_HDR_LEN) {
+				usb_ether_advance_rxbuf(dev, -1);
+				return -EMSGSIZE;
+			}
+
+			trailer = get_unaligned_le32(ptr + len - AX179A_HDR_LEN);
+			pkt_cnt = AX179A_RX_PKT_CNT(trailer);
+			hdr_off = AX179A_RX_HDR_OFF(trailer);
+			if (pkt_cnt == 0) {
+				usb_ether_advance_rxbuf(dev, -1);
+				return 0;
+			}
+			if (hdr_off + (pkt_cnt + 1) * AX179A_HDR_LEN > len) {
+				usb_ether_advance_rxbuf(dev, -1);
+				return -EIO;
+			}
+			priv->pkt_cnt = pkt_cnt;
+			priv->pkt_data = ptr;
+			priv->pkt_hdr = (u32 *)(ptr + hdr_off);
+			priv->pkt_end = ptr + hdr_off;
+		}
+
+		hdr = get_unaligned_le32(priv->pkt_hdr);
+		priv->pkt_hdr += AX179A_HDR_LEN / sizeof(u32);
+		pkt_len = AX179A_RX_LEN(hdr);
+		data = priv->pkt_data;
+		/* SBT patch 0003: step over a flagged frame whole */
+		priv->pkt_data += (pkt_len + 7) & ~7;
+		priv->pkt_cnt--;
+
+		if (data + pkt_len > priv->pkt_end) {
+			priv->pkt_cnt = 0;
+			usb_ether_advance_rxbuf(dev, -1);
+			return -EIO;
+		}
+		if ((hdr & AX179A_RX_OK) && !(hdr & AX179A_RX_DROP)) {
+			*packetp = data;
+			return pkt_len;
+		}
+		debug("AX88772D: dropped a flagged frame, header 0x%08x\n", hdr);
+		if (priv->pkt_cnt == 0) {
+			usb_ether_advance_rxbuf(dev, -1);
+			return -EAGAIN;
+		}
+	}
+}
+
+
 static int ax88179_eth_start(struct udevice *dev)
 {
 	struct asix_private *priv = dev_get_priv(dev);
 
+	if (priv->ax88772d)
+		return ax88772d_start(&priv->ueth, priv);
 	return asix_init_common(&priv->ueth, priv);
 }
 
@@ -762,6 +1178,8 @@ void ax88179_eth_stop(struct udevice *dev)
 
 	debug("** %s()\n", __func__);
 
+	if (priv->ax88772d)
+		ax88772d_stop(ueth);
 	usb_ether_advance_rxbuf(ueth, -1);
 	priv->pkt_cnt = 0;
 	priv->pkt_data = NULL;
@@ -772,6 +1190,8 @@ int ax88179_eth_send(struct udevice *dev, void *packet, int length)
 {
 	struct asix_private *priv = dev_get_priv(dev);
 
+	if (priv->ax88772d)
+		return ax88772d_send(&priv->ueth, priv, packet, length);
 	return asix_send_common(&priv->ueth, priv, packet, length);
 }
 
@@ -781,6 +1201,9 @@ int ax88179_eth_recv(struct udevice *dev, int flags, uchar **packetp)
 	struct ueth_data *ueth = &priv->ueth;
 	int ret, len;
 	u16 pkt_len;
+
+	if (priv->ax88772d)
+		return ax88772d_recv(ueth, priv, flags, packetp);
 
 	/* No packet left, get a new one */
 	if (priv->pkt_cnt == 0) {
@@ -878,6 +1301,13 @@ static int ax88179_eth_probe(struct udevice *dev)
 
 	usb_dev = priv->ueth.pusb_dev;
 	priv->maxpacketsize = usb_dev->epmaxpacketout[AX_ENDPOINT_OUT];
+
+	if (usb_dev->descriptor.bcdDevice == AX_BCDDEVICE_AX88772D) {
+		priv->ax88772d = true;
+		ret = ax88772d_bind(&priv->ueth);
+		if (ret)
+			return ret;
+	}
 
 	/* Get the MAC address */
 	ret = asix_read_mac(&priv->ueth, pdata->enetaddr);

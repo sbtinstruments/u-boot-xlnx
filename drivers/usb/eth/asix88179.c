@@ -1108,13 +1108,6 @@ static int ax88772d_link_setting(struct ueth_data *dev,
 	/* Without the paths ready, no frame moves either way */
 	ret |= ax88772d_write8(dev, AX88179A_MAC_PATH,
 			       AX_MAC_RX_PATH_READY | AX_MAC_TX_PATH_READY);
-	/*
-	 * EEE off, as ASIX's driver does after every link setup: it only
-	 * keeps EEE on a 1000BASE-T link, and this chip has none. Missing,
-	 * the PHY stays in its bad receive state too.
-	 */
-	ret |= asix_write_cmd(dev, AX88179_GPHY_CTRL, AX_GPHY_EEE_CTRL, 0, 0,
-			      NULL);
 
 	return ret ? -EIO : 0;
 }
@@ -1158,6 +1151,13 @@ static int ax88772d_start(struct ueth_data *dev, struct asix_private *priv)
 		ax88772d_link_mode(dev, &fast, &full);
 		debug("AX88772D link: %s, %s duplex\n", fast ? "100M" : "10M",
 		      full ? "full" : "half");
+		/*
+		 * EEE off, as ASIX's driver does at every link up: it keeps EEE
+		 * only on a 1000BASE-T link, and this chip has none. Before the
+		 * PHY check: with EEE on, the PHY shows its bad receive state.
+		 */
+		asix_write_cmd(dev, AX88179_GPHY_CTRL, AX_GPHY_EEE_CTRL, 0, 0,
+			       NULL);
 		if (!fast || priv->phy_good)
 			break;
 		if (!ax88772d_phy_bad(dev, &vstatus, &ctrl_status)) {
